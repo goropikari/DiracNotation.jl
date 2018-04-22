@@ -55,11 +55,16 @@ end
 @test stdout2str_dirac(dm(psi1)) == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)\nψ = |1⟩⟨1|\n"
 @test stdout2str_dirac( (psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3)) ) == "DenseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)\nψ = |11⟩⟨2|\n"
 @test stdout2str_dirac( sparse((psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3))) ) == "SparseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)\nψ = |11⟩⟨2|\n"
+@test stdout2str_dirac(psi1, "") == "Ket(dim=3)\n  basis: NLevel(N=3)\n|ψ⟩ = |1⟩\n"
+@test stdout2str_dirac(dm(psi1), "") == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)\nOperator = |1⟩⟨1|\n"
 
 
 @test md(psi1, "ψ") == "| ψ \\rangle = | 1 \\rangle"
 @test md(dagger(psi1), "ψ") == "\\langle ψ | = \\langle 1 |"
+@test md(dm(psi1), "ρ") == "ρ = | 1 \\rangle \\langle 1 |"
+@test md(dm(psi1) ⊗ dm(psi2), "ρ") == "ρ = | 12 \\rangle \\langle 12 |"
 @test md(coherentstate(b, alpha), "ψ") == "| ψ \\rangle = 0.923 | 0 \\rangle+0.369 | 1 \\rangle+0.104 | 2 \\rangle+0.024 | 3 \\rangle+0.005 | 4 \\rangle+0.001 | 5 \\rangle+0.0 | 6 \\rangle+0.0 | 7 \\rangle+0.0 | 8 \\rangle+0.0 | 9 \\rangle+0.0 | 10 \\rangle"
+@test md(im * coherentstate(b, alpha), "ψ") == "| ψ \\rangle = 0.923i | 0 \\rangle+0.369i | 1 \\rangle+0.104i | 2 \\rangle+0.024i | 3 \\rangle+0.005i | 4 \\rangle+0.001i | 5 \\rangle+0.0i | 6 \\rangle+0.0i | 7 \\rangle+0.0i | 8 \\rangle+0.0i | 9 \\rangle+0.0i | 10 \\rangle"
 @test md(spin1 ⊗ spin1 + spindown(SpinBasis(1//2)) ⊗ spindown(SpinBasis(1//2)), "\\psi") == "| \\psi \\rangle = | 00 \\rangle+1.0 | 11 \\rangle"
 @test md(spin1 ⊗ spin1 - spindown(SpinBasis(1//2)) ⊗ spindown(SpinBasis(1//2)), "\\psi") == "| \\psi \\rangle = | 00 \\rangle-1.0 | 11 \\rangle"
 @test md(spin1 + sigmaz(SpinBasis(1//2)) * sigmax(SpinBasis(1//2)) * spin1, "\\psi") == "| \\psi \\rangle = | 0 \\rangle-1.0 | 1 \\rangle"
