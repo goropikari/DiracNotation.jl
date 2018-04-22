@@ -233,7 +233,7 @@ end
 """
     n2s(x)
 
-number to string for tex function.
+number to string for pretty print.
 """
 function n2s(x::T) where T <: Complex
     str = ""
