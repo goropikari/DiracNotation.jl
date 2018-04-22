@@ -4,7 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/goropikari/DiracNotation.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/goropikari/DiracNotation.jl?branch=master)
 [![codecov.io](http://codecov.io/github/goropikari/DiracNotation.jl/coverage.svg?branch=master)](http://codecov.io/github/goropikari/DiracNotation.jl?branch=master)
 
-[DiracNotation.jl](https://github.com/qojulia/DiracNotation.jl) is a package to print Dirac notation rendering for Bra, Ket, and Operator in [QuantumOptics.jl](https://github.com/qojulia/QuantumOptics.jl).  
+[DiracNotation.jl](https://github.com/goropikari/DiracNotation.jl) is a package to print Dirac notation rendering for Bra, Ket, and Operator in [QuantumOptics.jl](https://github.com/qojulia/QuantumOptics.jl).  
 By using this package, matrix representation is changed into Dirac notation.
 
 ## Installation
