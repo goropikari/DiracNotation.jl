@@ -1,41 +1,56 @@
 using QuantumOptics
 import QuantumOptics.printing: showoperatorheader, permuted_sparsedata, permuted_densedata
 import Base.show
-export set_statename, dirac
+export dirac
 
-function set_statename(x::String=statename)
-    global statename = x
+# function set_statename(x::String=statename)
+#     global statename = x
+#     nothing
+# end
+# if isdefined(Main, :IJulia) && Main.IJulia.inited
+#     set_statename("\\mathrm{State}")
+# else
+#     set_statename("State")
+# end
+# function set_round_digit(x::Int=round_digit)
+#     global round_digit = x
+#     nothing
+# end
+# set_round_digit(3)
+function set_properties(; statename::String=_state_name,
+                          round_digit::Int=_digit,
+                          number_term::Int=_num_term,
+                          is_display_all::Bool=_display_all)
+    global _state_name = statename
+    global _digit = round_digit
+    global _num_term = number_term
+    global _display_all = is_display_all
     nothing
 end
 if isdefined(Main, :IJulia) && Main.IJulia.inited
-    set_statename("\\mathrm{State}")
+    set_properties(statename="\\mathrm{State}", round_digit=3, number_term=8, is_display_all=false)
 else
-    set_statename("State")
+    set_properties(statename="State", round_digit=3, number_term=8, is_display_all=false)
 end
-function set_round_digit(x::Int=round_digit)
-    global round_digit = x
-    nothing
-end
-set_round_digit(3)
 
 function show(io::IO, ::MIME"text/markdown", x::Ket)
     print(io, "Ket(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
-    str = md(x, statename)
+    str = md(x, _state_name)
     print(io, "\$" * str * "\$")
 end
 function show(io::IO, ::MIME"text/plain", x::Ket)
     print(io, "Ket(dim=$(length(x.basis)))\n  basis: $(x.basis)\n")
-    str = aa(x, statename)
+    str = aa(x, _state_name)
     print(io, str)
 end
 function show(io::IO, ::MIME"text/markdown", x::Bra)
     print(io, "Bra(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
-    str = md(x, statename)
+    str = md(x, _state_name)
     print(io, "\$" * str * "\$")
 end
 function show(io::IO, ::MIME"text/plain", x::Bra)
     print(io, "Bra(dim=$(length(x.basis)))\n  basis: $(x.basis)\n")
-    str = aa(x, statename)
+    str = aa(x, _state_name)
     print(io, str)
 end
 function show(io::IO, ::MIME"text/markdown", x::Union{DenseOperator,SparseOperator})
@@ -50,13 +65,13 @@ function show(io::IO, ::MIME"text/markdown", x::Union{DenseOperator,SparseOperat
         print(io, x.basis_r)
         print(io, "<br>")
     end
-    str = md(x, statename)
+    str = md(x, _state_name)
     print(io, "\$" * str * "\$")
 end
 function show(io::IO, ::MIME"text/plain", x::Union{DenseOperator,SparseOperator})
     showoperatorheader(io, x)
     println()
-    str = aa(x, statename)
+    str = aa(x, _state_name)
     print(io, str)
 end
 
@@ -71,14 +86,26 @@ function md(x::Union{Ket,Bra}, statename::String)
     data = x.data
     braket = ifelse(typeof(x) == Ket, ["|", "\\rangle"], ["\\langle", "|"])
 
+    numnz = countnz(data)
+    numprint = 0
+
     str = "$(braket[1]) $(statename) $(braket[2]) = "
     for (idx, ent) in enumerate(data)
+        if !(_display_all) && (numnz > _num_term) && ( div(_num_term, 2) <= numprint < numnz - div(_num_term, 2) - isodd(_num_term)) && !(ent≈0)
+            if numprint == div(_num_term, 2)
+                str *= " + \\cdots "
+            end
+            numprint += 1
+            continue
+        end
+
         if ent ≈ 1
             value = 1.0
         else
             value = ent
         end
         if !(ent ≈ 0)
+            numprint += 1
             if isfirstterm
                 isfirstterm = false
                 if value == 1.
@@ -111,16 +138,29 @@ function md(x::Union{DenseOperator,SparseOperator}, statename::String)
         data = permuted_sparsedata(x)
     end
 
+    numnz = countnz(data)
+    numprint = 0
+
     str = "$(statename) = "
     for i in 1:nrow
         for j in 1:ncol
             ent = data[i,j]
+
+            if !(_display_all) && (numnz > _num_term) && ( div(_num_term, 2) <= numprint < numnz - div(_num_term, 2) - isodd(_num_term) ) && !(ent≈0)
+                if numprint == div(_num_term, 2)
+                    str *= " + ⋯ "
+                end
+                numprint += 1
+                continue
+            end
+
             if ent ≈ 1
                 value = 1.0
             else
                 value = ent
             end
             if !(ent ≈ 0)
+                numprint += 1
                 if isfirstterm
                     isfirstterm = false
                     if value == 1.
@@ -156,14 +196,27 @@ function aa(x::Union{Ket,Bra}, statename::String="")
     data = x.data
     braket = ifelse(typeof(x) == Ket, ["|", "⟩"], ["⟨", "|"])
 
+    numnz = countnz(data)
+    numprint = 0
+
     str = "$(braket[1])$(statename)$(braket[2]) = "
     for (idx, ent) in enumerate(data)
+        if !(_display_all) && (numnz > _num_term) && ( div(_num_term, 2) <= numprint < numnz - div(_num_term, 2) - isodd(_num_term)) && !(ent≈0)
+            if numprint == div(_num_term, 2)
+                str *= " + ⋯ "
+            end
+            numprint += 1
+            continue
+        end
+
         if ent ≈ 1
             value = 1.0
         else
             value = ent
         end
         if !(ent ≈ 0)
+            numprint += 1
+            # println(numprint)
             if isfirstterm
                 isfirstterm = false
                 if value == 1.
@@ -197,16 +250,30 @@ function aa(x::Union{DenseOperator,SparseOperator}, statename::String="")
         data = permuted_sparsedata(x)
     end
 
+    numnz = countnz(data)
+    numprint = 0
+
     str = "$(statename) = "
     for i in 1:nrow
         for j in 1:ncol
             ent = data[i,j]
+
+            if !(_display_all) && (numnz > _num_term) && ( div(_num_term, 2) <= numprint < numnz - div(_num_term, 2) - isodd(_num_term) ) && !(ent≈0)
+                if numprint == div(_num_term, 2)
+                    str *= " + ⋯ "
+                end
+                numprint += 1
+                continue
+            end
+
+
             if ent ≈ 1
                 value = 1.0
             else
                 value = ent
             end
             if !(ent ≈ 0)
+                numprint += 1
                 if isfirstterm
                     isfirstterm = false
                     if value == 1.
@@ -216,11 +283,11 @@ function aa(x::Union{DenseOperator,SparseOperator}, statename::String="")
                     end
                 else
                     if value == 1.0
-                        str *= "+ |$(ind2Nary(i, lshape))⟩⟨$(ind2Nary(j, rshape))|"
+                        str *= " + |$(ind2Nary(i, lshape))⟩⟨$(ind2Nary(j, rshape))|"
                     elseif n2s(ent)[1] == '-'
-                        str *= "$(n2s(ent)) |$(ind2Nary(i, lshape))⟩⟨$(ind2Nary(j, rshape))|"
+                        str *= " $(n2s(ent)) |$(ind2Nary(i, lshape))⟩⟨$(ind2Nary(j, rshape))|"
                     else
-                        str *= "+$(n2s(ent)) |$(ind2Nary(i, lshape))⟩⟨$(ind2Nary(j, rshape))|"
+                        str *= " +$(n2s(ent)) |$(ind2Nary(i, lshape))⟩⟨$(ind2Nary(j, rshape))|"
                     end
                 end
             end
@@ -239,7 +306,7 @@ function n2s(x::T) where T <: Complex
     str = ""
     str1, str2 = "", ""
     if !(x.re ≈ 0)
-        str1 *= "$(round(x.re, round_digit))"
+        str1 *= "$(round(x.re, _digit))"
     end
     if !(x.im ≈ 0)
         if x.im ≈ one(x.im)
@@ -247,7 +314,7 @@ function n2s(x::T) where T <: Complex
         elseif -x.im ≈ one(x.im)
             str2 *= "-i"
         else
-            str2 *= "$(round(x.im, round_digit))i"
+            str2 *= "$(round(x.im, _digit))i"
         end
     end
     if !isempty(str1) && x.im > zero(x.im)

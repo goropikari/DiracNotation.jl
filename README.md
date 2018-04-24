@@ -53,7 +53,7 @@ DenseOperator(dim=4x4)
   basis right: NLevel(N=4)
 State = |01⟩⟨2|
 
-julia> set_statename("ψ") # change the name of LHS
+julia> DiracNotation.set_properties(statename="ψ") # change the name of LHS
 
 julia> psi1
 Ket(dim=2)
