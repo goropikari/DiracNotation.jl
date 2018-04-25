@@ -4,10 +4,11 @@ import Base.show
 export dirac
 
 """
-    set_properties(; statename::String=_state_name,
-                      round_digit::Int=_digit,
-                      number_term::Int=_num_term,
-                      isallterms::Bool=_display_all_term)
+    set_properties(; statename = "State",
+                      round_digit = 3,
+                      number_term = 8,
+                      isallterms = false,
+                      isdiracstyle = true)
 
 Set default properties.
 
@@ -16,63 +17,91 @@ Set default properties.
 - `round_digit::Int`: Rounds number for display.
 - `number_term::Int`: The number of displayed terms.
 - `isallterms::Bool`: If this is `true`, show all terms.
+- `isdiracstyle::Bool`: `true` -> Dirac notation. `false` -> matrix style
 """
 function set_properties(; statename::String=_state_name,
                           round_digit::Int=_digit,
                           number_term::Int=_num_term,
-                          isallterms::Bool=_display_all_term)
+                          isallterms::Bool=_display_all_term,
+                          isdiracstyle::Bool=_diracstyle)
     global _state_name = statename
     global _digit = round_digit
     global _num_term = number_term
     global _display_all_term = isallterms
+    global _diracstyle = isdiracstyle
     nothing
 end
 if isdefined(Main, :IJulia) && Main.IJulia.inited
-    set_properties(statename="\\mathrm{State}", round_digit=3, number_term=8, isallterms=false)
+    set_properties(statename="\\mathrm{State}", round_digit=3, number_term=8, isallterms=false, isdiracstyle=true)
 else
-    set_properties(statename="State", round_digit=3, number_term=8, isallterms=false)
+    set_properties(statename="State", round_digit=3, number_term=8, isallterms=false, isdiracstyle=true)
 end
 
 function show(io::IO, ::MIME"text/markdown", x::Ket)
-    print(io, "Ket(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
-    str = md(x, _state_name)
-    print(io, "\$" * str * "\$")
+    if _diracstyle
+        print(io, "Ket(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
+        str = md(x, _state_name)
+        print(io, "\$" * str * "\$")
+    else
+        # show(io, MIME("text/plain"), x)
+        show(x)
+    end
 end
 function show(io::IO, ::MIME"text/plain", x::Ket)
-    print(io, "Ket(dim=$(length(x.basis)))\n  basis: $(x.basis)\n")
-    str = aa(x, _state_name)
-    print(io, str)
+    if _diracstyle
+        print(io, "Ket(dim=$(length(x.basis)))\n  basis: $(x.basis)\n")
+        str = aa(x, _state_name)
+        print(io, str)
+    else
+        show(io, x)
+    end
 end
 function show(io::IO, ::MIME"text/markdown", x::Bra)
-    print(io, "Bra(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
-    str = md(x, _state_name)
-    print(io, "\$" * str * "\$")
+    if _diracstyle
+        print(io, "Bra(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
+        str = md(x, _state_name)
+        print(io, "\$" * str * "\$")
+    else
+        show(x)
+    end
 end
 function show(io::IO, ::MIME"text/plain", x::Bra)
-    print(io, "Bra(dim=$(length(x.basis)))\n  basis: $(x.basis)\n")
-    str = aa(x, _state_name)
-    print(io, str)
+    if _diracstyle
+        print(io, "Bra(dim=$(length(x.basis)))\n  basis: $(x.basis)\n")
+        str = aa(x, _state_name)
+        print(io, str)
+    else
+        show(io, x)
+    end
 end
 function show(io::IO, ::MIME"text/markdown", x::Union{DenseOperator,SparseOperator})
-    print(io, "$(typeof(x).name.name)(dim=$(length(x.basis_l))x$(length(x.basis_r)))<br>")
-    if bases.samebases(x)
-        print(io, "&nbsp;&nbsp;&nbsp;&nbsp;  basis: ")
-        print(io, basis(x), "<br>")
+    if _diracstyle
+        print(io, "$(typeof(x).name.name)(dim=$(length(x.basis_l))x$(length(x.basis_r)))<br>")
+        if bases.samebases(x)
+            print(io, "&nbsp;&nbsp;&nbsp;&nbsp;  basis: ")
+            print(io, basis(x), "<br>")
+        else
+            print(io, "&nbsp;&nbsp;&nbsp;&nbsp;  basis left:  &nbsp;&nbsp;")
+            print(io, x.basis_l)
+            print(io, "<br>&nbsp;&nbsp;&nbsp;&nbsp;  basis right: ")
+            print(io, x.basis_r)
+            print(io, "<br>")
+        end
+        str = md(x, _state_name)
+        print(io, "\$" * str * "\$")
     else
-        print(io, "&nbsp;&nbsp;&nbsp;&nbsp;  basis left:  &nbsp;&nbsp;")
-        print(io, x.basis_l)
-        print(io, "<br>&nbsp;&nbsp;&nbsp;&nbsp;  basis right: ")
-        print(io, x.basis_r)
-        print(io, "<br>")
+        show(x)
     end
-    str = md(x, _state_name)
-    print(io, "\$" * str * "\$")
 end
 function show(io::IO, ::MIME"text/plain", x::Union{DenseOperator,SparseOperator})
-    showoperatorheader(io, x)
-    println()
-    str = aa(x, _state_name)
-    print(io, str)
+    if _diracstyle
+        showoperatorheader(io, x)
+        println()
+        str = aa(x, _state_name)
+        print(io, str)
+    else
+        show(io, x)
+    end
 end
 
 """

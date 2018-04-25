@@ -16,29 +16,27 @@ Pkg.clone("https://github.com/goropikari/DiracNotation.jl")
 ## Usage
 This package is used with [QuantumOptics.jl](https://github.com/qojulia/QuantumOptics.jl).
 After importing this package, all states are shown by Dirac Notation.
+
+### Simple example
 ```julia
 julia> using QuantumOptics, DiracNotation
 
 julia> basis = SpinBasis(1//2)
 Spin(1/2)
 
+julia> srand(2018);
+
+julia> randstate(SpinBasis(1//2) ⊗ SpinBasis(3//2))
+Ket(dim=8)
+  basis: [Spin(1/2) ⊗ Spin(3/2)]
+|State⟩ = (0.263+0.044i)|00⟩ + (0.105+0.274i)|01⟩ + (0.394+0.304i)|02⟩ + (0.39+0.388i)|03⟩ + (0.29+0.289i)|10⟩ + (0.061+0.246i)|11⟩ + (0.143+0.105i)|12⟩ + (0.139+0.1i)|13⟩
+
 julia> psi1 = basisstate(basis, 1)
 Ket(dim=2)
   basis: Spin(1/2)
 |State⟩ = |0⟩
 
-julia> sigmax(basis) * psi1
-Ket(dim=2)
-  basis: Spin(1/2)
-|State⟩ = |1⟩
-
-julia> println(psi1) # QuantumOptics.jl style
-Ket(dim=2)
-  basis: Spin(1/2)
- 1.0+0.0im
- 0.0+0.0im
-
-julia> psi2 = basisstate(basis, 2)
+julia> psi2 = sigmax(basis) * psi1
 Ket(dim=2)
   basis: Spin(1/2)
 |State⟩ = |1⟩
@@ -57,25 +55,21 @@ julia> dm(bell)
 DenseOperator(dim=4x4)
   basis: [Spin(1/2) ⊗ Spin(1/2)]
 State = 0.5 |00⟩⟨00| +0.5 |00⟩⟨11| +0.5 |11⟩⟨00| +0.5 |11⟩⟨11|
+```
 
-julia> psi3 = basisstate(NLevelBasis(4), 3)
+
+### change the default state name
+```julia
+julia> DiracNotation.set_properties(statename="ψ")
+
+julia> bell
 Ket(dim=4)
-  basis: NLevel(N=4)
-|State⟩ = |2⟩
+  basis: [Spin(1/2) ⊗ Spin(1/2)]
+|ψ⟩ = 0.707|00⟩ + 0.707|11⟩
+```
 
-julia> (psi1 ⊗ psi2) ⊗ dagger(psi3)
-DenseOperator(dim=4x4)
-  basis left:  [Spin(1/2) ⊗ Spin(1/2)]
-  basis right: NLevel(N=4)
-State = |01⟩⟨2|
-
-julia> DiracNotation.set_properties(statename="ψ") # change the name of LHS
-
-julia> psi1
-Ket(dim=2)
-  basis: Spin(1/2)
-|ψ⟩ = |0⟩
-
+### Display a state with arbitrary state name.
+```julia
 julia> dirac(psi1, "ϕ") # display state with arbitrary state name.
 Ket(dim=2)
   basis: Spin(1/2)
@@ -96,8 +90,21 @@ DenseOperator(dim=2x2)
 ρB = |1⟩⟨1|
 ```
 
+### Restore to original style
+```julia
+julia> DiracNotation.set_properties(isdiracstyle=false)
 
+julia> bell
+Ket(dim=4)
+  basis: [Spin(1/2) ⊗ Spin(1/2)]
+ 0.707107+0.0im
+      0.0+0.0im
+      0.0+0.0im
+ 0.707107+0.0im
+```
+
+
+## Example on IJulia
 On IJulia, Dirac notation is rendered by MathJax.  
-**Example**
 - [QuantumOptics version](https://nbviewer.jupyter.org/github/goropikari/DiracNotation.jl/blob/master/examples/QuantumOptics.ipynb)
 - [DiracNotation version](https://nbviewer.jupyter.org/github/goropikari/DiracNotation.jl/blob/master/examples/braket.ipynb)
