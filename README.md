@@ -15,6 +15,7 @@ Pkg.clone("https://github.com/goropikari/DiracNotation.jl")
 
 ## Usage
 This package is used with [QuantumOptics.jl](https://github.com/qojulia/QuantumOptics.jl).
+After importing this package, all states are shown by Dirac Notation.
 ```julia
 julia> using QuantumOptics, DiracNotation
 
@@ -25,6 +26,11 @@ julia> psi1 = basisstate(basis, 1)
 Ket(dim=2)
   basis: Spin(1/2)
 |State⟩ = |0⟩
+
+julia> sigmax(basis) * psi1
+Ket(dim=2)
+  basis: Spin(1/2)
+|State⟩ = |1⟩
 
 julia> println(psi1) # QuantumOptics.jl style
 Ket(dim=2)
@@ -37,15 +43,25 @@ Ket(dim=2)
   basis: Spin(1/2)
 |State⟩ = |1⟩
 
+julia> plus = 1/sqrt(2) * (psi1 + psi2)
+Ket(dim=2)
+  basis: Spin(1/2)
+|State⟩ = 0.707|0⟩ + 0.707|1⟩
+
+julia> bell = (dm(psi1) ⊗ one(basis) + dm(psi2) ⊗ sigmax(basis)) * (plus ⊗ psi1)
+Ket(dim=4)
+  basis: [Spin(1/2) ⊗ Spin(1/2)]
+|State⟩ = 0.707|00⟩ + 0.707|11⟩
+
+julia> dm(bell)
+DenseOperator(dim=4x4)
+  basis: [Spin(1/2) ⊗ Spin(1/2)]
+State = 0.5 |00⟩⟨00| +0.5 |00⟩⟨11| +0.5 |11⟩⟨00| +0.5 |11⟩⟨11|
+
 julia> psi3 = basisstate(NLevelBasis(4), 3)
 Ket(dim=4)
   basis: NLevel(N=4)
 |State⟩ = |2⟩
-
-julia> dm(psi1)
-DenseOperator(dim=2x2)
-  basis: Spin(1/2)
-State = |0⟩⟨0|
 
 julia> (psi1 ⊗ psi2) ⊗ dagger(psi3)
 DenseOperator(dim=4x4)
@@ -60,10 +76,24 @@ Ket(dim=2)
   basis: Spin(1/2)
 |ψ⟩ = |0⟩
 
-julia> dirac(psi1, "ϕ")
+julia> dirac(psi1, "ϕ") # display state with arbitrary state name.
 Ket(dim=2)
   basis: Spin(1/2)
 |ϕ⟩ = |0⟩
+
+julia> ρAB = dm(psi1) ⊗ dm(psi2);
+
+julia> dirac(ρAB, "ρAB")
+DenseOperator(dim=4x4)
+  basis: [Spin(1/2) ⊗ Spin(1/2)]
+ρAB = |01⟩⟨01|
+
+julia> ρB = ptrace(ρAB, 1);
+
+julia> dirac(ρB, "ρB")
+DenseOperator(dim=2x2)
+  basis: Spin(1/2)
+ρB = |1⟩⟨1|
 ```
 
 

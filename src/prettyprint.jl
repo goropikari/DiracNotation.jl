@@ -3,34 +3,34 @@ import QuantumOptics.printing: showoperatorheader, permuted_sparsedata, permuted
 import Base.show
 export dirac
 
-# function set_statename(x::String=statename)
-#     global statename = x
-#     nothing
-# end
-# if isdefined(Main, :IJulia) && Main.IJulia.inited
-#     set_statename("\\mathrm{State}")
-# else
-#     set_statename("State")
-# end
-# function set_round_digit(x::Int=round_digit)
-#     global round_digit = x
-#     nothing
-# end
-# set_round_digit(3)
+"""
+    set_properties(; statename::String=_state_name,
+                      round_digit::Int=_digit,
+                      number_term::Int=_num_term,
+                      isallterms::Bool=_display_all_term)
+
+Set default properties.
+
+# Arguments
+- `statename::String`: Default state name.
+- `round_digit::Int`: Rounds number for display.
+- `number_term::Int`: The number of displayed terms.
+- `isallterms::Bool`: If this is `true`, show all terms.
+"""
 function set_properties(; statename::String=_state_name,
                           round_digit::Int=_digit,
                           number_term::Int=_num_term,
-                          is_display_all::Bool=_display_all)
+                          isallterms::Bool=_display_all_term)
     global _state_name = statename
     global _digit = round_digit
     global _num_term = number_term
-    global _display_all = is_display_all
+    global _display_all_term = isallterms
     nothing
 end
 if isdefined(Main, :IJulia) && Main.IJulia.inited
-    set_properties(statename="\\mathrm{State}", round_digit=3, number_term=8, is_display_all=false)
+    set_properties(statename="\\mathrm{State}", round_digit=3, number_term=8, isallterms=false)
 else
-    set_properties(statename="State", round_digit=3, number_term=8, is_display_all=false)
+    set_properties(statename="State", round_digit=3, number_term=8, isallterms=false)
 end
 
 function show(io::IO, ::MIME"text/markdown", x::Ket)
@@ -75,6 +75,12 @@ function show(io::IO, ::MIME"text/plain", x::Union{DenseOperator,SparseOperator}
     print(io, str)
 end
 
+"""
+    md(x::Union{Ket,Bra}, statename::String)
+    md(x::Union{DenseOperator,SparseOperator}, statename::String)
+
+Generate markdown for Dirac notation
+"""
 function md(x::Union{Ket,Bra}, statename::String)
     shape = x.basis.shape
     nq = length(shape)
@@ -91,7 +97,7 @@ function md(x::Union{Ket,Bra}, statename::String)
 
     str = "$(braket[1]) $(statename) $(braket[2]) = "
     for (idx, ent) in enumerate(data)
-        if !(_display_all) && (numnz > _num_term) && ( div(_num_term, 2) <= numprint < numnz - div(_num_term, 2) - isodd(_num_term)) && !(ent≈0)
+        if !(_display_all_term) && (numnz > _num_term) && ( div(_num_term, 2) <= numprint < numnz - div(_num_term, 2) - isodd(_num_term)) && !(ent≈0)
             if numprint == div(_num_term, 2)
                 str *= " + \\cdots "
             end
@@ -146,7 +152,7 @@ function md(x::Union{DenseOperator,SparseOperator}, statename::String)
         for j in 1:ncol
             ent = data[i,j]
 
-            if !(_display_all) && (numnz > _num_term) && ( div(_num_term, 2) <= numprint < numnz - div(_num_term, 2) - isodd(_num_term) ) && !(ent≈0)
+            if !(_display_all_term) && (numnz > _num_term) && ( div(_num_term, 2) <= numprint < numnz - div(_num_term, 2) - isodd(_num_term) ) && !(ent≈0)
                 if numprint == div(_num_term, 2)
                     str *= " + ⋯ "
                 end
@@ -185,6 +191,12 @@ function md(x::Union{DenseOperator,SparseOperator}, statename::String)
     return str
 end
 
+"""
+    aa(x::Union{Ket,Bra}, statename::String="")
+    aa(x::Union{DenseOperator,SparseOperator}, statename::String="")
+
+Generate ASCIIart for Dirac notation.
+"""
 function aa(x::Union{Ket,Bra}, statename::String="")
     shape = x.basis.shape
     nq = length(shape)
@@ -201,7 +213,7 @@ function aa(x::Union{Ket,Bra}, statename::String="")
 
     str = "$(braket[1])$(statename)$(braket[2]) = "
     for (idx, ent) in enumerate(data)
-        if !(_display_all) && (numnz > _num_term) && ( div(_num_term, 2) <= numprint < numnz - div(_num_term, 2) - isodd(_num_term)) && !(ent≈0)
+        if !(_display_all_term) && (numnz > _num_term) && ( div(_num_term, 2) <= numprint < numnz - div(_num_term, 2) - isodd(_num_term)) && !(ent≈0)
             if numprint == div(_num_term, 2)
                 str *= " + ⋯ "
             end
@@ -258,7 +270,7 @@ function aa(x::Union{DenseOperator,SparseOperator}, statename::String="")
         for j in 1:ncol
             ent = data[i,j]
 
-            if !(_display_all) && (numnz > _num_term) && ( div(_num_term, 2) <= numprint < numnz - div(_num_term, 2) - isodd(_num_term) ) && !(ent≈0)
+            if !(_display_all_term) && (numnz > _num_term) && ( div(_num_term, 2) <= numprint < numnz - div(_num_term, 2) - isodd(_num_term) ) && !(ent≈0)
                 if numprint == div(_num_term, 2)
                     str *= " + ⋯ "
                 end
@@ -350,6 +362,45 @@ function ind2Nary(m::Int, dims::Vector{Int})
     return str
 end
 
+"""
+    Nary2ind(x, dims) -> index
+
+Return index from n-ary array and dimension list
+"""
+function Nary2ind(x::Vector{Int}, dims::Vector{Int})
+    tmp = 0
+    if length(x) != length(dims)
+        error()
+    end
+    nterms = length(x)
+    tp = prod(dims[2:end])
+    for i in 1:nterms-1
+        tmp += x[i] * tp
+        tp = div(tp, dims[i+1])
+    end
+    tmp += x[end] + 1
+end
+
+
+"""
+    permuted_densedata2(x::DenseOperator)
+
+(Experimental) Maybe this is equivalent to permuted_densedata in QuantumOptics.jl.
+But I cannot guarantee.
+"""
+function permuted_densedata2(x::DenseOperator)
+    lshape = x.basis_l.shape
+    rshape = x.basis_r.shape
+    lbn = length(lshape)
+    rbn = length(rshape)
+
+    perm = Int[collect(lbn:-1:1); collect(lbn+rbn:-1:lbn+1)]
+    data = reshape(x.data,  [lshape; rshape]...)
+    data = permutedims(data, perm)
+    data = reshape(data, size(x.data))
+
+    return round.(data, machineprecorder)
+end
 
 
 """
