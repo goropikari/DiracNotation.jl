@@ -37,14 +37,43 @@ else
     set_properties(statename="State", round_digit=3, number_term=8, isallterms=false, isdiracstyle=true)
 end
 
+"""
+    print_plain_in_md(io::IO, x::Union{Ket,Bra,Operator})
+
+Replace `\n` and ` ` (empty space) with `<br>` and `&nbsp;`, respectively.
+"""
+function print_plain_in_md(io::IO, x::Union{Ket,Bra,Operator})
+    str = sprint((u, v) -> Base.print_matrix(IOContext(u, :limit => true, :compact => true), v, " ", "  ", "", "  \u2026  ", "\u22ee", "  \u22f1  "), x.data)
+    str = replace(str, "\n", "<br>")
+    str = replace(str, "  \u2026  ", "  \u2026 ")
+    str = replace(str, "  \u22f1  ", "\u22f1")
+    str = replace(str, " ", "&nbsp;&nbsp;")
+    print(io, str)
+end
+
+function showoperatorheader_md(io::IO, x::Union{DenseOperator,SparseOperator})
+    print(io, "$(typeof(x).name.name)(dim=$(length(x.basis_l))x$(length(x.basis_r)))<br>")
+    if bases.samebases(x)
+        print(io, "&nbsp;&nbsp;&nbsp;&nbsp;  basis: ")
+        print(io, basis(x), "<br>")
+    else
+        print(io, "&nbsp;&nbsp;&nbsp;&nbsp;  basis left:  &nbsp;&nbsp;")
+        print(io, x.basis_l)
+        print(io, "<br>&nbsp;&nbsp;&nbsp;&nbsp;  basis right: ")
+        print(io, x.basis_r)
+        print(io, "<br>")
+    end
+end
+
 function show(io::IO, ::MIME"text/markdown", x::Ket)
     if _diracstyle
         print(io, "Ket(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
         str = md(x, _state_name)
         print(io, "\$" * str * "\$")
     else
-        # show(io, MIME("text/plain"), x)
-        show(x)
+        # show(io, x)
+        print(io, "Ket(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
+        print_plain_in_md(io, x)
     end
 end
 function show(io::IO, ::MIME"text/plain", x::Ket)
@@ -62,7 +91,9 @@ function show(io::IO, ::MIME"text/markdown", x::Bra)
         str = md(x, _state_name)
         print(io, "\$" * str * "\$")
     else
-        show(x)
+        # show(x)
+        print(io, "Bra(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
+        print_plain_in_md(io, x)
     end
 end
 function show(io::IO, ::MIME"text/plain", x::Bra)
@@ -74,22 +105,26 @@ function show(io::IO, ::MIME"text/plain", x::Bra)
         show(io, x)
     end
 end
-function show(io::IO, ::MIME"text/markdown", x::Union{DenseOperator,SparseOperator})
+function show(io::IO, ::MIME"text/markdown", x::DenseOperator)
     if _diracstyle
-        print(io, "$(typeof(x).name.name)(dim=$(length(x.basis_l))x$(length(x.basis_r)))<br>")
-        if bases.samebases(x)
-            print(io, "&nbsp;&nbsp;&nbsp;&nbsp;  basis: ")
-            print(io, basis(x), "<br>")
-        else
-            print(io, "&nbsp;&nbsp;&nbsp;&nbsp;  basis left:  &nbsp;&nbsp;")
-            print(io, x.basis_l)
-            print(io, "<br>&nbsp;&nbsp;&nbsp;&nbsp;  basis right: ")
-            print(io, x.basis_r)
-            print(io, "<br>")
-        end
+        showoperatorheader_md(io, x)
         str = md(x, _state_name)
         print(io, "\$" * str * "\$")
     else
+        # show(x)
+        showoperatorheader_md(io, x)
+        print_plain_in_md(io, x)
+    end
+end
+function show(io::IO, ::MIME"text/markdown", x::SparseOperator)
+    if _diracstyle
+        showoperatorheader_md(io, x)
+        str = md(x, _state_name)
+        print(io, "\$" * str * "\$")
+    else
+        # show(x)
+        showoperatorheader_md(io, x)
+        # print_plain_in_md(io, x)
         show(x)
     end
 end
@@ -487,7 +522,56 @@ DenseOperator(dim=2x6)
 ρ = |0⟩⟨12|
 ```
 """
-function dirac(x::Union{Ket,Bra}, statename::String="")
+# function dirac(x::Union{Ket,Bra}, statename::String="")
+#     if isempty(statename) && isdefined(Main, :IJulia) && Main.IJulia.inited
+#         statename = "\\psi"
+#     elseif isempty(statename)
+#         statename = "ψ"
+#     end
+#
+#     ketbra = ifelse(typeof(x) == Ket, "Ket", "Bra")
+#     if isdefined(Main, :IJulia) && Main.IJulia.inited
+#         display("text/markdown", "$(ketbra)(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
+#         str = md(x, statename)
+#         display("text/latex", "\$" * str * "\$")
+#     else
+#         print("$(ketbra)(dim=$(length(x.basis)))\n  basis: $(x.basis)\n")
+#         str = aa(x, statename)
+#         println(str)
+#     end
+# end
+# function dirac(x::Union{DenseOperator,SparseOperator}, statename::String="")
+#     if isempty(statename) && isdefined(Main, :IJulia) && Main.IJulia.inited
+#         statename = "\\mathrm{Operator}"
+#     elseif isempty(statename)
+#         statename = "Operator"
+#     end
+#
+#     if isdefined(Main, :IJulia) && Main.IJulia.inited
+#         header = "$(typeof(x).name.name)(dim=$(length(x.basis_l))x$(length(x.basis_r)))<br>"
+#         if bases.samebases(x)
+#             header *= "&nbsp;&nbsp;&nbsp;&nbsp;  basis: " * string(basis(x))
+#             display("text/markdown", header)
+#         else
+#             header *= "&nbsp;&nbsp;&nbsp;&nbsp;  basis left:  " * string(x.basis_l) * "<br>" *
+#                         "&nbsp;&nbsp;&nbsp;&nbsp;  basis right: " * string(x.basis_r)
+#             display("text/markdown", header)
+#         end
+#         str = md(x, statename)
+#         display("text/latex", "\$" * str * "\$")
+#     else
+#         println("$(typeof(x).name.name)(dim=$(length(x.basis_l))x$(length(x.basis_r)))")
+#         if bases.samebases(x)
+#             println("  basis: ", basis(x))
+#         else
+#             println("  basis left:  ", x.basis_l)
+#             println("  basis right: ", x.basis_r)
+#         end
+#         str = aa(x, statename)
+#         println(str)
+#     end
+# end
+function dirac(io::IO, x::Union{Ket,Bra}, statename::String="")
     if isempty(statename) && isdefined(Main, :IJulia) && Main.IJulia.inited
         statename = "\\psi"
     elseif isempty(statename)
@@ -500,12 +584,13 @@ function dirac(x::Union{Ket,Bra}, statename::String="")
         str = md(x, statename)
         display("text/latex", "\$" * str * "\$")
     else
-        print("$(ketbra)(dim=$(length(x.basis)))\n  basis: $(x.basis)\n")
+        print(io, "$(ketbra)(dim=$(length(x.basis)))\n  basis: $(x.basis)\n")
         str = aa(x, statename)
-        println(str)
+        println(io, str)
     end
 end
-function dirac(x::Union{DenseOperator,SparseOperator}, statename::String="")
+dirac(x::Union{Ket,Bra}, statename::String="") = dirac(STDOUT, x, statename)
+function dirac(io, x::Union{DenseOperator,SparseOperator}, statename::String="")
     if isempty(statename) && isdefined(Main, :IJulia) && Main.IJulia.inited
         statename = "\\mathrm{Operator}"
     elseif isempty(statename)
@@ -525,14 +610,15 @@ function dirac(x::Union{DenseOperator,SparseOperator}, statename::String="")
         str = md(x, statename)
         display("text/latex", "\$" * str * "\$")
     else
-        println("$(typeof(x).name.name)(dim=$(length(x.basis_l))x$(length(x.basis_r)))")
+        println(io, "$(typeof(x).name.name)(dim=$(length(x.basis_l))x$(length(x.basis_r)))")
         if bases.samebases(x)
-            println("  basis: ", basis(x))
+            println(io, "  basis: ", basis(x))
         else
-            println("  basis left:  ", x.basis_l)
-            println("  basis right: ", x.basis_r)
+            println(io, "  basis left:  ", x.basis_l)
+            println(io, "  basis right: ", x.basis_r)
         end
         str = aa(x, statename)
-        println(str)
+        println(io, str)
     end
 end
+dirac(x::Union{DenseOperator,SparseOperator}, statename::String="") = dirac(STDOUT, x, statename)
