@@ -25,11 +25,6 @@ function stdout2str(x)
     display(td, x);
     str = String(take!(buf))
 end
-function stdout2str_dirac(x::Union{Ket,Bra,Operator}, statename::String="ψ")
-    rdstdout, wrstdout = redirect_stdout()
-    dirac(x, statename)
-    s = convert(String, readavailable(rdstdout))
-end
 @test stdout2str(psi1) == "Ket(dim=3)\n  basis: NLevel(N=3)\n|State⟩ = |1⟩"
 @test stdout2str(dagger(psi1)) == "Bra(dim=3)\n  basis: NLevel(N=3)\n⟨State| = ⟨1|"
 @test stdout2str(psi1 ⊗ psi1) == "Ket(dim=9)\n  basis: [NLevel(N=3) ⊗ NLevel(N=3)]\n|State⟩ = |11⟩"
@@ -50,13 +45,36 @@ end
 @test stdout2str( coherentstate(b, alpha) ) == "Ket(dim=11)\n  basis: Fock(cutoff=10)\n|State⟩ = 0.923|0⟩ + 0.369|1⟩ + 0.104|2⟩ + 0.024|3⟩ + ⋯  + 0.0|7⟩ + 0.0|8⟩ + 0.0|9⟩ + 0.0|10⟩"
 @test stdout2str( destroy(b) ) == "SparseOperator(dim=11x11)\n  basis: Fock(cutoff=10)State = |0⟩⟨1| +1.414 |1⟩⟨2| +1.732 |2⟩⟨3| +2.0 |3⟩⟨4| + ⋯  +2.646 |6⟩⟨7| +2.828 |7⟩⟨8| +3.0 |8⟩⟨9| +3.162 |9⟩⟨10|"
 #
-@test stdout2str_dirac(psi1) == "Ket(dim=3)\n  basis: NLevel(N=3)\n|ψ⟩ = |1⟩\n"
-@test stdout2str_dirac(dagger(psi1)) == "Bra(dim=3)\n  basis: NLevel(N=3)\n⟨ψ| = ⟨1|\n"
-@test stdout2str_dirac(dm(psi1)) == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)\nψ = |1⟩⟨1|\n"
-@test stdout2str_dirac( (psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3)) ) == "DenseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)\nψ = |11⟩⟨2|\n"
-@test stdout2str_dirac( sparse((psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3))) ) == "SparseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)\nψ = |11⟩⟨2|\n"
-@test stdout2str_dirac(psi1, "") == "Ket(dim=3)\n  basis: NLevel(N=3)\n|ψ⟩ = |1⟩\n"
-@test stdout2str_dirac(dm(psi1), "") == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)\nOperator = |1⟩⟨1|\n"
+
+DiracNotation.set_properties(isdirac=false)
+@test stdout2str(psi1) == sprint(show, psi1)
+@test stdout2str(dagger(psi1)) == sprint(show, dagger(psi1))
+@test stdout2str(psi1 ⊗ psi1) == sprint(show, psi1 ⊗ psi1)
+@test stdout2str(dagger(psi1 ⊗ psi1)) == sprint(show, dagger(psi1 ⊗ psi1))
+@test stdout2str(dagger(psi1 ⊗ psi2)) == sprint(show, dagger(psi1 ⊗ psi2))
+@test stdout2str(dm(psi1)) == sprint(show, dm(psi1))
+@test stdout2str(dm(psi1) * im) == sprint(show, dm(psi1) * im)
+@test stdout2str(dm(spinup(SpinBasis(1//2))) + dm(spindown(SpinBasis(1//2)))) == sprint(show, dm(spinup(SpinBasis(1//2))) + dm(spindown(SpinBasis(1//2))))
+@test stdout2str(dm(spinup(SpinBasis(1//2))) - dm(spindown(SpinBasis(1//2)))) == sprint(show, dm(spinup(SpinBasis(1//2))) - dm(spindown(SpinBasis(1//2))))
+@test stdout2str(sparse(dm(psi1))) == sprint(show, sparse(dm(psi1)))
+@test stdout2str(psi1 ⊗ dagger(psi2)) == sprint(show, psi1 ⊗ dagger(psi2))
+@test stdout2str(sparse(psi1 ⊗ dagger(psi2))) == sprint(show, sparse(psi1 ⊗ dagger(psi2)))
+@test stdout2str((psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3))) == sprint(show, (psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3)))
+@test stdout2str(sigmay(SpinBasis(1//2)) * spin1) == sprint(show, sigmay(SpinBasis(1//2)) * spin1)
+@test stdout2str( dagger(sigmay(SpinBasis(1//2)) * spin1) ) == sprint(show, dagger(sigmay(SpinBasis(1//2)) * spin1))
+@test stdout2str( spin1 + sigmax(SpinBasis(1//2)) * spin1 ) == sprint(show, spin1 + sigmax(SpinBasis(1//2)) * spin1)
+@test stdout2str( spin1 + sigmaz(SpinBasis(1//2)) * sigmax(SpinBasis(1//2)) * spin1 ) == sprint(show, spin1 + sigmaz(SpinBasis(1//2)) * sigmax(SpinBasis(1//2)) * spin1)
+@test stdout2str( coherentstate(b, alpha) ) == sprint(show, coherentstate(b, alpha))
+@test stdout2str( destroy(b) ) == sprint(show, destroy(b))
+DiracNotation.set_properties(isdirac=true)
+
+@test sprint(dirac, psi1) == "Ket(dim=3)\n  basis: NLevel(N=3)\n|ψ⟩ = |1⟩\n"
+@test sprint(dirac, dagger(psi1)) == "Bra(dim=3)\n  basis: NLevel(N=3)\n⟨ψ| = ⟨1|\n"
+@test sprint(dirac, dm(psi1)) == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)\nOperator = |1⟩⟨1|\n"
+@test sprint(dirac,  (psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3)) ) == "DenseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)\nOperator = |11⟩⟨2|\n"
+@test sprint(dirac,  sparse((psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3))) ) == "SparseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)\nOperator = |11⟩⟨2|\n"
+@test sprint((io, x) -> dirac(io, x, ""), psi1) == "Ket(dim=3)\n  basis: NLevel(N=3)\n|ψ⟩ = |1⟩\n"
+@test sprint((io, x) -> dirac(io, x, ""), dm(psi1)) == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)\nOperator = |1⟩⟨1|\n"
 
 
 @test md(psi1, "ψ") == "| ψ \\rangle = | 1 \\rangle"

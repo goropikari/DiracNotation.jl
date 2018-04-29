@@ -92,7 +92,7 @@ DenseOperator(dim=2x2)
 
 ### Restore to original style
 ```julia
-julia> DiracNotation.set_properties(isdiracstyle=false)
+julia> DiracNotation.set_properties(isdirac=false)
 
 julia> bell
 Ket(dim=4)

@@ -8,7 +8,7 @@ export dirac
                       round_digit = 3,
                       number_term = 8,
                       isallterms = false,
-                      isdiracstyle = true)
+                      isdirac = true)
 
 Set default properties.
 
@@ -17,24 +17,24 @@ Set default properties.
 - `round_digit::Int`: Rounds number for display.
 - `number_term::Int`: The number of displayed terms.
 - `isallterms::Bool`: If this is `true`, show all terms.
-- `isdiracstyle::Bool`: `true` -> Dirac notation. `false` -> matrix style
+- `isdirac::Bool`: `true` -> Dirac notation. `false` -> matrix style
 """
 function set_properties(; statename::String=_state_name,
                           round_digit::Int=_digit,
                           number_term::Int=_num_term,
                           isallterms::Bool=_display_all_term,
-                          isdiracstyle::Bool=_diracstyle)
+                          isdirac::Bool=_diracstyle)
     global _state_name = statename
     global _digit = round_digit
     global _num_term = number_term
     global _display_all_term = isallterms
-    global _diracstyle = isdiracstyle
+    global _diracstyle = isdirac
     nothing
 end
 if isdefined(Main, :IJulia) && Main.IJulia.inited
-    set_properties(statename="\\mathrm{State}", round_digit=3, number_term=8, isallterms=false, isdiracstyle=true)
+    set_properties(statename="\\mathrm{State}", round_digit=3, number_term=8, isallterms=false, isdirac=true)
 else
-    set_properties(statename="State", round_digit=3, number_term=8, isallterms=false, isdiracstyle=true)
+    set_properties(statename="State", round_digit=3, number_term=8, isallterms=false, isdirac=true)
 end
 
 """
@@ -43,13 +43,21 @@ end
 Replace `\n` and ` ` (empty space) with `<br>` and `&nbsp;`, respectively.
 """
 function print_plain_in_md(io::IO, x::Union{Ket,Bra,Operator})
-    str = sprint((u, v) -> Base.print_matrix(IOContext(u, :limit => true, :compact => true), v, " ", "  ", "", "  \u2026  ", "\u22ee", "  \u22f1  "), x.data)
+    if isdefined(Main, :IJulia) && Main.IJulia.inited
+        str = Main.IJulia.limitstringmime(MIME("text/plain"), x.data)
+        n = search(str, '\n')
+        str = str[n+1:end]
+    else
+        str = sprint((u, v) -> Base.print_matrix(IOContext(u, :limit => true, :compact => true), v, " ", "  ", "", "  \u2026  ", "\u22ee", "  \u22f1  "), x.data)
+    end
+
     str = replace(str, "\n", "<br>")
     str = replace(str, "  \u2026  ", "  \u2026 ")
     str = replace(str, "  \u22f1  ", "\u22f1")
     str = replace(str, " ", "&nbsp;&nbsp;")
     print(io, str)
 end
+
 
 function showoperatorheader_md(io::IO, x::Union{DenseOperator,SparseOperator})
     print(io, "$(typeof(x).name.name)(dim=$(length(x.basis_l))x$(length(x.basis_r)))<br>")
@@ -71,7 +79,6 @@ function show(io::IO, ::MIME"text/markdown", x::Ket)
         str = md(x, _state_name)
         print(io, "\$" * str * "\$")
     else
-        # show(io, x)
         print(io, "Ket(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
         print_plain_in_md(io, x)
     end
@@ -91,7 +98,6 @@ function show(io::IO, ::MIME"text/markdown", x::Bra)
         str = md(x, _state_name)
         print(io, "\$" * str * "\$")
     else
-        # show(x)
         print(io, "Bra(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
         print_plain_in_md(io, x)
     end
@@ -111,7 +117,6 @@ function show(io::IO, ::MIME"text/markdown", x::DenseOperator)
         str = md(x, _state_name)
         print(io, "\$" * str * "\$")
     else
-        # show(x)
         showoperatorheader_md(io, x)
         print_plain_in_md(io, x)
     end
@@ -122,10 +127,8 @@ function show(io::IO, ::MIME"text/markdown", x::SparseOperator)
         str = md(x, _state_name)
         print(io, "\$" * str * "\$")
     else
-        # show(x)
         showoperatorheader_md(io, x)
-        # print_plain_in_md(io, x)
-        show(x)
+        print_plain_in_md(io, x)
     end
 end
 function show(io::IO, ::MIME"text/plain", x::Union{DenseOperator,SparseOperator})
@@ -292,7 +295,6 @@ function aa(x::Union{Ket,Bra}, statename::String="")
         end
         if !(ent ≈ 0)
             numprint += 1
-            # println(numprint)
             if isfirstterm
                 isfirstterm = false
                 if value == 1.
@@ -522,55 +524,6 @@ DenseOperator(dim=2x6)
 ρ = |0⟩⟨12|
 ```
 """
-# function dirac(x::Union{Ket,Bra}, statename::String="")
-#     if isempty(statename) && isdefined(Main, :IJulia) && Main.IJulia.inited
-#         statename = "\\psi"
-#     elseif isempty(statename)
-#         statename = "ψ"
-#     end
-#
-#     ketbra = ifelse(typeof(x) == Ket, "Ket", "Bra")
-#     if isdefined(Main, :IJulia) && Main.IJulia.inited
-#         display("text/markdown", "$(ketbra)(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
-#         str = md(x, statename)
-#         display("text/latex", "\$" * str * "\$")
-#     else
-#         print("$(ketbra)(dim=$(length(x.basis)))\n  basis: $(x.basis)\n")
-#         str = aa(x, statename)
-#         println(str)
-#     end
-# end
-# function dirac(x::Union{DenseOperator,SparseOperator}, statename::String="")
-#     if isempty(statename) && isdefined(Main, :IJulia) && Main.IJulia.inited
-#         statename = "\\mathrm{Operator}"
-#     elseif isempty(statename)
-#         statename = "Operator"
-#     end
-#
-#     if isdefined(Main, :IJulia) && Main.IJulia.inited
-#         header = "$(typeof(x).name.name)(dim=$(length(x.basis_l))x$(length(x.basis_r)))<br>"
-#         if bases.samebases(x)
-#             header *= "&nbsp;&nbsp;&nbsp;&nbsp;  basis: " * string(basis(x))
-#             display("text/markdown", header)
-#         else
-#             header *= "&nbsp;&nbsp;&nbsp;&nbsp;  basis left:  " * string(x.basis_l) * "<br>" *
-#                         "&nbsp;&nbsp;&nbsp;&nbsp;  basis right: " * string(x.basis_r)
-#             display("text/markdown", header)
-#         end
-#         str = md(x, statename)
-#         display("text/latex", "\$" * str * "\$")
-#     else
-#         println("$(typeof(x).name.name)(dim=$(length(x.basis_l))x$(length(x.basis_r)))")
-#         if bases.samebases(x)
-#             println("  basis: ", basis(x))
-#         else
-#             println("  basis left:  ", x.basis_l)
-#             println("  basis right: ", x.basis_r)
-#         end
-#         str = aa(x, statename)
-#         println(str)
-#     end
-# end
 function dirac(io::IO, x::Union{Ket,Bra}, statename::String="")
     if isempty(statename) && isdefined(Main, :IJulia) && Main.IJulia.inited
         statename = "\\psi"
