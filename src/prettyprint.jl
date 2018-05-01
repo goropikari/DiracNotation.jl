@@ -1,14 +1,20 @@
 using QuantumOptics
-import QuantumOptics.printing: showoperatorheader, permuted_sparsedata, permuted_densedata
+import QuantumOptics.printing: showoperatorheader, permuted_sparsedata, permuted_densedata, _std_order
 import Base.show
 export dirac
+
+print_with_color(:cyan,
+                """
+                    DiracNotation.jl: By default, states are printed in standard order.
+                """)
 
 """
     set_properties(; statename = "State",
                       round_digit = 3,
                       number_term = 8,
                       isallterms = false,
-                      isdirac = true)
+                      isdirac = true,
+                      standard_order = true)
 
 Set default properties.
 
@@ -18,37 +24,43 @@ Set default properties.
 - `number_term::Int`: The number of displayed terms.
 - `isallterms::Bool`: If this is `true`, show all terms.
 - `isdirac::Bool`: `true` -> Dirac notation. `false` -> matrix style
+- `standard_order`: In detail, please read [QuantumOptics.jl Official documentation](https://qojulia.org/documentation/quantumobjects/operators.html#tensor_order-1).
+                    If `isdirac` is `true` and `standard_order` is `false`, the most right hand side
+                    is the first state, i.e., `spinup(SpisBasis(1//2)) ⊗ spindown(SpinBasis(1//2))` (``|01⟩`` in standard order)
+                    is displayed as ``|10⟩``.
 """
 function set_properties(; statename::String=_state_name,
                           round_digit::Int=_digit,
                           number_term::Int=_num_term,
                           isallterms::Bool=_display_all_term,
-                          isdirac::Bool=_diracstyle)
+                          isdirac::Bool=_diracstyle,
+                          standard_order::Bool=_std_order)
     global _state_name = statename
     global _digit = round_digit
     global _num_term = number_term
     global _display_all_term = isallterms
     global _diracstyle = isdirac
+    QuantumOptics.set_printing(standard_order=standard_order)
     nothing
 end
 if isdefined(Main, :IJulia) && Main.IJulia.inited
-    set_properties(statename="\\mathrm{State}", round_digit=3, number_term=8, isallterms=false, isdirac=true)
+    set_properties(statename="\\mathrm{State}", round_digit=3, number_term=8, isallterms=false, isdirac=true, standard_order=true)
 else
-    set_properties(statename="State", round_digit=3, number_term=8, isallterms=false, isdirac=true)
+    set_properties(statename="State", round_digit=3, number_term=8, isallterms=false, isdirac=true, standard_order=true)
 end
 
 """
-    print_plain_in_md(io::IO, x::Union{Ket,Bra,Operator})
+    print_plain_in_md(io::IO, x::AbstractArray)
 
 Replace `\n` and ` ` (empty space) with `<br>` and `&nbsp;`, respectively.
 """
-function print_plain_in_md(io::IO, x::Union{Ket,Bra,Operator})
+function print_plain_in_md(io::IO, x::AbstractArray)
     if isdefined(Main, :IJulia) && Main.IJulia.inited
-        str = Main.IJulia.limitstringmime(MIME("text/plain"), x.data)
+        str = Main.IJulia.limitstringmime(MIME("text/plain"), x)
         n = search(str, '\n')
         str = str[n+1:end]
     else
-        str = sprint((u, v) -> Base.print_matrix(IOContext(u, :limit => true, :compact => true), v, " ", "  ", "", "  \u2026  ", "\u22ee", "  \u22f1  "), x.data)
+        str = sprint((u, v) -> Base.print_matrix(IOContext(u, :limit => true, :compact => true), v, " ", "  ", "", "  \u2026  ", "\u22ee", "  \u22f1  "), x)
     end
 
     str = replace(str, "\n", "<br>")
@@ -58,7 +70,11 @@ function print_plain_in_md(io::IO, x::Union{Ket,Bra,Operator})
     print(io, str)
 end
 
+"""
+    showoperatorheader_md(io::IO, x::Union{DenseOperator,SparseOperator})
 
+Show `Operator` header by markdown.
+"""
 function showoperatorheader_md(io::IO, x::Union{DenseOperator,SparseOperator})
     print(io, "$(typeof(x).name.name)(dim=$(length(x.basis_l))x$(length(x.basis_r)))<br>")
     if bases.samebases(x)
@@ -73,6 +89,16 @@ function showoperatorheader_md(io::IO, x::Union{DenseOperator,SparseOperator})
     end
 end
 
+"""
+    permuted_braketdata(x::Union{Ket,Bra})
+
+Permute data in reverse order.
+"""
+function permuted_braketdata(x::Union{Ket,Bra})
+    perm = collect(length(basis(x).shape):-1:1)
+    return permutesystems(x, perm).data
+end
+
 function show(io::IO, ::MIME"text/markdown", x::Ket)
     if _diracstyle
         print(io, "Ket(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
@@ -80,7 +106,11 @@ function show(io::IO, ::MIME"text/markdown", x::Ket)
         print(io, "\$" * str * "\$")
     else
         print(io, "Ket(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
-        print_plain_in_md(io, x)
+        if _std_order
+            print_plain_in_md(io, permuted_braketdata(x) )
+        else
+            print_plain_in_md(io, x.data)
+        end
     end
 end
 function show(io::IO, ::MIME"text/plain", x::Ket)
@@ -89,7 +119,7 @@ function show(io::IO, ::MIME"text/plain", x::Ket)
         str = aa(x, _state_name)
         print(io, str)
     else
-        show(io, x)
+        show(io, x) # call the method in QuantumOptics.jl
     end
 end
 function show(io::IO, ::MIME"text/markdown", x::Bra)
@@ -99,7 +129,11 @@ function show(io::IO, ::MIME"text/markdown", x::Bra)
         print(io, "\$" * str * "\$")
     else
         print(io, "Bra(dim=$(length(x.basis)))<br> &nbsp;&nbsp;&nbsp;&nbsp; basis: $(x.basis)<br>")
-        print_plain_in_md(io, x)
+        if _std_order
+            print_plain_in_md(io, permuted_braketdata(x) )
+        else
+            print_plain_in_md(io, x.data)
+        end
     end
 end
 function show(io::IO, ::MIME"text/plain", x::Bra)
@@ -108,7 +142,7 @@ function show(io::IO, ::MIME"text/plain", x::Bra)
         str = aa(x, _state_name)
         print(io, str)
     else
-        show(io, x)
+        show(io, x) # call the method in QuantumOptics.jl
     end
 end
 function show(io::IO, ::MIME"text/markdown", x::DenseOperator)
@@ -118,7 +152,11 @@ function show(io::IO, ::MIME"text/markdown", x::DenseOperator)
         print(io, "\$" * str * "\$")
     else
         showoperatorheader_md(io, x)
-        print_plain_in_md(io, x)
+        if _std_order
+            print_plain_in_md(io, permuted_densedata(x) )
+        else
+            print_plain_in_md(io, x.data)
+        end
     end
 end
 function show(io::IO, ::MIME"text/markdown", x::SparseOperator)
@@ -128,7 +166,11 @@ function show(io::IO, ::MIME"text/markdown", x::SparseOperator)
         print(io, "\$" * str * "\$")
     else
         showoperatorheader_md(io, x)
-        print_plain_in_md(io, x)
+        if _std_order
+            print_plain_in_md(io, permuted_sparsedata(x) )
+        else
+            print_plain_in_md(io, x.data)
+        end
     end
 end
 function show(io::IO, ::MIME"text/plain", x::Union{DenseOperator,SparseOperator})
@@ -138,7 +180,7 @@ function show(io::IO, ::MIME"text/plain", x::Union{DenseOperator,SparseOperator}
         str = aa(x, _state_name)
         print(io, str)
     else
-        show(io, x)
+        show(io, x) # call the method in QuantumOptics.jl
     end
 end
 
@@ -149,16 +191,21 @@ end
 Generate markdown for Dirac notation
 """
 function md(x::Union{Ket,Bra}, statename::String)
-    shape = x.basis.shape
-    nq = length(shape)
-    isfirstterm = true
-    perm = collect(reverse(1:nq))
-    if nq != 1
-        x = permutesystems(x, perm)
+    nq = length(x.basis.shape)
+
+    if _std_order
+        shape = x.basis.shape
+        perm = collect(reverse(1:nq))
+        if nq != 1
+            x = permutesystems(x, perm)
+        end
+    else
+        shape = reverse(x.basis.shape)
     end
     data = x.data
-    braket = ifelse(typeof(x) == Ket, ["|", "\\rangle"], ["\\langle", "|"])
 
+    braket = ifelse(typeof(x) == Ket, ["|", "\\rangle"], ["\\langle", "|"])
+    isfirstterm = true
     numnz = countnz(data)
     numprint = 0
 
@@ -199,18 +246,24 @@ function md(x::Union{Ket,Bra}, statename::String)
     return str
 end
 function md(x::Union{DenseOperator,SparseOperator}, statename::String)
-    rshape = x.basis_r.shape
-    lshape = x.basis_l.shape
-    ncol = prod(rshape)
-    nrow = prod(lshape)
+    ncol = prod(x.basis_r.shape)
+    nrow = prod(x.basis_l.shape)
 
-    isfirstterm = true
-    if typeof(x) == DenseOperator
-        data = permuted_densedata(x)
-    elseif typeof(x) == SparseOperator
-        data = permuted_sparsedata(x)
+    if _std_order
+        rshape = x.basis_r.shape
+        lshape = x.basis_l.shape
+        if typeof(x) == DenseOperator
+            data = permuted_densedata(x)
+        elseif typeof(x) == SparseOperator
+            data = permuted_sparsedata(x)
+        end
+    else
+        rshape = reverse(x.basis_r.shape)
+        lshape = reverse(x.basis_l.shape)
+        data = x.data
     end
 
+    isfirstterm = true
     numnz = countnz(data)
     numprint = 0
 
@@ -265,16 +318,20 @@ end
 Generate ASCIIart for Dirac notation.
 """
 function aa(x::Union{Ket,Bra}, statename::String="")
-    shape = x.basis.shape
-    nq = length(shape)
-    isfirstterm = true
-    perm = collect(reverse(1:nq))
-    if nq != 1
-        x = permutesystems(x, perm)
+    nq = length(x.basis.shape)
+    if _std_order
+        shape = x.basis.shape
+        perm = collect(reverse(1:nq))
+        if nq != 1
+            x = permutesystems(x, perm)
+        end
+    else
+        shape = reverse(x.basis.shape)
     end
     data = x.data
-    braket = ifelse(typeof(x) == Ket, ["|", "⟩"], ["⟨", "|"])
 
+    braket = ifelse(typeof(x) == Ket, ["|", "⟩"], ["⟨", "|"])
+    isfirstterm = true
     numnz = countnz(data)
     numprint = 0
 
@@ -315,19 +372,24 @@ function aa(x::Union{Ket,Bra}, statename::String="")
     return str
 end
 function aa(x::Union{DenseOperator,SparseOperator}, statename::String="")
-    isfirstterm = true
-    rshape = x.basis_r.shape
-    lshape = x.basis_l.shape
-    ncol = prod(rshape)
-    nrow = prod(lshape)
+    ncol = prod(x.basis_r.shape)
+    nrow = prod(x.basis_l.shape)
 
-    isfirstterm = true
-    if typeof(x) == DenseOperator
-        data = permuted_densedata(x)
-    elseif typeof(x) == SparseOperator
-        data = permuted_sparsedata(x)
+    if _std_order
+        rshape = x.basis_r.shape
+        lshape = x.basis_l.shape
+        if typeof(x) == DenseOperator
+            data = permuted_densedata(x)
+        elseif typeof(x) == SparseOperator
+            data = permuted_sparsedata(x)
+        end
+    else
+        rshape = reverse(x.basis_r.shape)
+        lshape = reverse(x.basis_l.shape)
+        data = x.data
     end
 
+    isfirstterm = true
     numnz = countnz(data)
     numprint = 0
 
@@ -427,7 +489,20 @@ function ind2Nary(m::Int, dims::Vector{Int})
     str *= string(m)
     return str
 end
-
+function ind2Nary_array(m::Int, dims::Vector{Int})
+    m = m - 1
+    nq = length(dims)
+    ar = zeros(Int, nq)
+    product = prod(dims[2:end])
+    for ith in 1:nq-1
+        d = div(m, product)
+        m = m - d * product
+        product = div(product, dims[ith+1])
+        ar[ith] = d
+    end
+    ar[end] = m
+    return ar
+end
 """
     Nary2ind(x, dims) -> index
 
@@ -447,6 +522,9 @@ function Nary2ind(x::Vector{Int}, dims::Vector{Int})
     tmp += x[end] + 1
 end
 
+function mirror_world_index(i::Int, dims::Vector{Int})
+    return Nary2ind( reverse(ind2Nary_array(i, dims)), reverse(dims)  )
+end
 
 """
     permuted_densedata2(x::DenseOperator)

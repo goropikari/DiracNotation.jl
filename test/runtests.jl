@@ -1,5 +1,5 @@
 using DiracNotation, QuantumOptics
-import DiracNotation: md
+import DiracNotation: md, mirror_world_index
 @static if VERSION < v"0.7.0-DEV.2005"
     using Base.Test
 else
@@ -8,6 +8,8 @@ end
 
 psi1 = basisstate(NLevelBasis(3), 2)
 psi2 = basisstate(NLevelBasis(5), 3)
+us = spinup(SpinBasis(1//2))
+ds = spindown(SpinBasis(1//2))
 spin1 = basisstate(SpinBasis(1//2), 1)
 spin2 = basisstate(SpinBasis(3//2), 4)
 
@@ -25,6 +27,9 @@ function stdout2str(x)
     display(td, x);
     str = String(take!(buf))
 end
+
+DiracNotation.set_properties(standard_order=true)
+DiracNotation.set_properties(isdirac=true)
 @test stdout2str(psi1) == "Ket(dim=3)\n  basis: NLevel(N=3)\n|State⟩ = |1⟩"
 @test stdout2str(dagger(psi1)) == "Bra(dim=3)\n  basis: NLevel(N=3)\n⟨State| = ⟨1|"
 @test stdout2str(psi1 ⊗ psi1) == "Ket(dim=9)\n  basis: [NLevel(N=3) ⊗ NLevel(N=3)]\n|State⟩ = |11⟩"
@@ -44,9 +49,39 @@ end
 @test stdout2str( spin1 + sigmaz(SpinBasis(1//2)) * sigmax(SpinBasis(1//2)) * spin1 ) == "Ket(dim=2)\n  basis: Spin(1/2)\n|State⟩ = |0⟩ -1.0|1⟩"
 @test stdout2str( coherentstate(b, alpha) ) == "Ket(dim=11)\n  basis: Fock(cutoff=10)\n|State⟩ = 0.923|0⟩ + 0.369|1⟩ + 0.104|2⟩ + 0.024|3⟩ + ⋯  + 0.0|7⟩ + 0.0|8⟩ + 0.0|9⟩ + 0.0|10⟩"
 @test stdout2str( destroy(b) ) == "SparseOperator(dim=11x11)\n  basis: Fock(cutoff=10)State = |0⟩⟨1| +1.414 |1⟩⟨2| +1.732 |2⟩⟨3| +2.0 |3⟩⟨4| + ⋯  +2.646 |6⟩⟨7| +2.828 |7⟩⟨8| +3.0 |8⟩⟨9| +3.162 |9⟩⟨10|"
-#
 
+@test sprint(dirac, psi1) == "Ket(dim=3)\n  basis: NLevel(N=3)\n|ψ⟩ = |1⟩\n"
+@test sprint(dirac, dagger(psi1)) == "Bra(dim=3)\n  basis: NLevel(N=3)\n⟨ψ| = ⟨1|\n"
+@test sprint(dirac, dm(psi1)) == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)\nOperator = |1⟩⟨1|\n"
+@test sprint(dirac, us ⊗ ds) == "Ket(dim=4)\n  basis: [Spin(1/2) ⊗ Spin(1/2)]\n|ψ⟩ = |01⟩\n"
+@test sprint(dirac,  (psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3)) ) == "DenseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)\nOperator = |11⟩⟨2|\n"
+@test sprint(dirac,  sparse((psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3))) ) == "SparseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)\nOperator = |11⟩⟨2|\n"
+@test sprint((io, x) -> dirac(io, x, ""), psi1) == "Ket(dim=3)\n  basis: NLevel(N=3)\n|ψ⟩ = |1⟩\n"
+@test sprint((io, x) -> dirac(io, x, ""), dm(psi1)) == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)\nOperator = |1⟩⟨1|\n"
+
+@test md(psi1, "ψ") == "| ψ \\rangle = | 1 \\rangle"
+@test md(dagger(psi1), "ψ") == "\\langle ψ | = \\langle 1 |"
+@test md(dm(psi1), "ρ") == "ρ = | 1 \\rangle \\langle 1 |"
+@test md(dm(psi1) ⊗ dm(psi2), "ρ") == "ρ = | 12 \\rangle \\langle 12 |"
+@test md(coherentstate(b, alpha), "ψ") == "| ψ \\rangle = 0.923 | 0 \\rangle+0.369 | 1 \\rangle+0.104 | 2 \\rangle+0.024 | 3 \\rangle + \\cdots +0.0 | 7 \\rangle+0.0 | 8 \\rangle+0.0 | 9 \\rangle+0.0 | 10 \\rangle"
+@test md(im * coherentstate(b, alpha), "ψ") == "| ψ \\rangle = 0.923i | 0 \\rangle+0.369i | 1 \\rangle+0.104i | 2 \\rangle+0.024i | 3 \\rangle + \\cdots +0.0i | 7 \\rangle+0.0i | 8 \\rangle+0.0i | 9 \\rangle+0.0i | 10 \\rangle"
+@test md(spin1 ⊗ spin1 + spindown(SpinBasis(1//2)) ⊗ spindown(SpinBasis(1//2)), "\\psi") == "| \\psi \\rangle = | 00 \\rangle+1.0 | 11 \\rangle"
+@test md(spin1 ⊗ spin1 - spindown(SpinBasis(1//2)) ⊗ spindown(SpinBasis(1//2)), "\\psi") == "| \\psi \\rangle = | 00 \\rangle-1.0 | 11 \\rangle"
+@test md(spin1 + sigmaz(SpinBasis(1//2)) * sigmax(SpinBasis(1//2)) * spin1, "\\psi") == "| \\psi \\rangle = | 0 \\rangle-1.0 | 1 \\rangle"
+@test md(sigmax(SpinBasis(1//2)), "\\rho") == "\\rho = | 0 \\rangle \\langle 1 |+ | 1 \\rangle \\langle 0 |"
+@test md(sigmaz(SpinBasis(1//2)), "\\rho") == "\\rho = | 0 \\rangle \\langle 0 |-1.0 | 1 \\rangle \\langle 1 |"
+@test md(sigmay(SpinBasis(1//2)), "\\rho") == "\\rho = -i | 0 \\rangle \\langle 1 |+i | 1 \\rangle \\langle 0 |"
+@test md(sigmax(SpinBasis(1//2)) + sigmay(SpinBasis(1//2)), "\\rho") == "\\rho = (1.0-i) | 0 \\rangle \\langle 1 |+(1.0+i) | 1 \\rangle \\langle 0 |"
+@test md(sigmay(SpinBasis(1//2)) + sigmaz(SpinBasis(1//2)), "\\rho") == "\\rho = | 0 \\rangle \\langle 0 |-i | 0 \\rangle \\langle 1 |+i | 1 \\rangle \\langle 0 |-1.0 | 1 \\rangle \\langle 1 |"
+
+
+################################################################################
+DiracNotation.set_properties(standard_order=true)
 DiracNotation.set_properties(isdirac=false)
+################################################################################
+@test sprint(show, us ⊗ ds) == "Ket(dim=4)\n  basis: [Spin(1/2) ⊗ Spin(1/2)]\n 0.0+0.0im\n 1.0+0.0im\n 0.0+0.0im\n 0.0+0.0im"
+@test sprint(show, dm(us ⊗ ds)) == "DenseOperator(dim=4x4)\n  basis: [Spin(1/2) ⊗ Spin(1/2)]\n 0.0+0.0im  0.0+0.0im  0.0+0.0im  0.0+0.0im\n 0.0+0.0im  1.0+0.0im  0.0+0.0im  0.0+0.0im\n 0.0+0.0im  0.0+0.0im  0.0+0.0im  0.0+0.0im\n 0.0+0.0im  0.0+0.0im  0.0+0.0im  0.0+0.0im"
+@test sprint(show, sigmax(SpinBasis(1//2)) ⊗ sigmay(SpinBasis(1//2))) == "SparseOperator(dim=4x4)\n  basis: [Spin(1/2) ⊗ Spin(1/2)]\n  [4, 1]  =  0.0+1.0im\n  [3, 2]  =  0.0-1.0im\n  [2, 3]  =  0.0+1.0im\n  [1, 4]  =  0.0-1.0im"
 @test stdout2str(psi1) == sprint(show, psi1)
 @test stdout2str(dagger(psi1)) == sprint(show, dagger(psi1))
 @test stdout2str(psi1 ⊗ psi1) == sprint(show, psi1 ⊗ psi1)
@@ -66,16 +101,15 @@ DiracNotation.set_properties(isdirac=false)
 @test stdout2str( spin1 + sigmaz(SpinBasis(1//2)) * sigmax(SpinBasis(1//2)) * spin1 ) == sprint(show, spin1 + sigmaz(SpinBasis(1//2)) * sigmax(SpinBasis(1//2)) * spin1)
 @test stdout2str( coherentstate(b, alpha) ) == sprint(show, coherentstate(b, alpha))
 @test stdout2str( destroy(b) ) == sprint(show, destroy(b))
-DiracNotation.set_properties(isdirac=true)
 
 @test sprint(dirac, psi1) == "Ket(dim=3)\n  basis: NLevel(N=3)\n|ψ⟩ = |1⟩\n"
 @test sprint(dirac, dagger(psi1)) == "Bra(dim=3)\n  basis: NLevel(N=3)\n⟨ψ| = ⟨1|\n"
 @test sprint(dirac, dm(psi1)) == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)\nOperator = |1⟩⟨1|\n"
+@test sprint(dirac, us ⊗ ds) == "Ket(dim=4)\n  basis: [Spin(1/2) ⊗ Spin(1/2)]\n|ψ⟩ = |01⟩\n"
 @test sprint(dirac,  (psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3)) ) == "DenseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)\nOperator = |11⟩⟨2|\n"
 @test sprint(dirac,  sparse((psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3))) ) == "SparseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)\nOperator = |11⟩⟨2|\n"
 @test sprint((io, x) -> dirac(io, x, ""), psi1) == "Ket(dim=3)\n  basis: NLevel(N=3)\n|ψ⟩ = |1⟩\n"
 @test sprint((io, x) -> dirac(io, x, ""), dm(psi1)) == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)\nOperator = |1⟩⟨1|\n"
-
 
 @test md(psi1, "ψ") == "| ψ \\rangle = | 1 \\rangle"
 @test md(dagger(psi1), "ψ") == "\\langle ψ | = \\langle 1 |"
@@ -91,3 +125,113 @@ DiracNotation.set_properties(isdirac=true)
 @test md(sigmay(SpinBasis(1//2)), "\\rho") == "\\rho = -i | 0 \\rangle \\langle 1 |+i | 1 \\rangle \\langle 0 |"
 @test md(sigmax(SpinBasis(1//2)) + sigmay(SpinBasis(1//2)), "\\rho") == "\\rho = (1.0-i) | 0 \\rangle \\langle 1 |+(1.0+i) | 1 \\rangle \\langle 0 |"
 @test md(sigmay(SpinBasis(1//2)) + sigmaz(SpinBasis(1//2)), "\\rho") == "\\rho = | 0 \\rangle \\langle 0 |-i | 0 \\rangle \\langle 1 |+i | 1 \\rangle \\langle 0 |-1.0 | 1 \\rangle \\langle 1 |"
+
+
+
+################################################################################
+DiracNotation.set_properties(standard_order=false)
+DiracNotation.set_properties(isdirac=true)
+################################################################################
+@test stdout2str(psi1) == "Ket(dim=3)\n  basis: NLevel(N=3)\n|State⟩ = |1⟩"
+@test stdout2str(dagger(psi1)) == "Bra(dim=3)\n  basis: NLevel(N=3)\n⟨State| = ⟨1|"
+@test stdout2str(psi1 ⊗ psi1) == "Ket(dim=9)\n  basis: [NLevel(N=3) ⊗ NLevel(N=3)]\n|State⟩ = |11⟩"
+@test stdout2str(dagger(psi1 ⊗ psi1)) == "Bra(dim=9)\n  basis: [NLevel(N=3) ⊗ NLevel(N=3)]\n⟨State| = ⟨11|"
+@test stdout2str(dagger(psi1 ⊗ psi2)) == "Bra(dim=15)\n  basis: [NLevel(N=3) ⊗ NLevel(N=5)]\n⟨State| = ⟨21|"
+@test stdout2str(dm(psi1)) == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)State = |1⟩⟨1|"
+@test stdout2str(dm(psi1) * im) == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)State = i |1⟩⟨1|"
+@test stdout2str(dm(spinup(SpinBasis(1//2))) + dm(spindown(SpinBasis(1//2)))) == "DenseOperator(dim=2x2)\n  basis: Spin(1/2)State = |0⟩⟨0| + |1⟩⟨1|"
+@test stdout2str(dm(spinup(SpinBasis(1//2))) - dm(spindown(SpinBasis(1//2)))) == "DenseOperator(dim=2x2)\n  basis: Spin(1/2)State = |0⟩⟨0| -1.0 |1⟩⟨1|"
+@test stdout2str(sparse(dm(psi1))) == "SparseOperator(dim=3x3)\n  basis: NLevel(N=3)State = |1⟩⟨1|"
+@test stdout2str(psi1 ⊗ dagger(psi2)) == "DenseOperator(dim=3x5)\n  basis left:  NLevel(N=3)\n  basis right: NLevel(N=5)State = |1⟩⟨2|"
+@test stdout2str(sparse(psi1 ⊗ dagger(psi2))) == "SparseOperator(dim=3x5)\n  basis left:  NLevel(N=3)\n  basis right: NLevel(N=5)State = |1⟩⟨2|"
+@test stdout2str((psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3))) == "DenseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)State = |11⟩⟨2|"
+@test stdout2str(sigmay(SpinBasis(1//2)) * spin1) == "Ket(dim=2)\n  basis: Spin(1/2)\n|State⟩ = i|1⟩"
+@test stdout2str( dagger(sigmay(SpinBasis(1//2)) * spin1) ) == "Bra(dim=2)\n  basis: Spin(1/2)\n⟨State| = -i⟨1|"
+@test stdout2str( spin1 + sigmax(SpinBasis(1//2)) * spin1 ) == "Ket(dim=2)\n  basis: Spin(1/2)\n|State⟩ = |0⟩ + 1.0|1⟩"
+@test stdout2str( spin1 + sigmaz(SpinBasis(1//2)) * sigmax(SpinBasis(1//2)) * spin1 ) == "Ket(dim=2)\n  basis: Spin(1/2)\n|State⟩ = |0⟩ -1.0|1⟩"
+@test stdout2str( coherentstate(b, alpha) ) == "Ket(dim=11)\n  basis: Fock(cutoff=10)\n|State⟩ = 0.923|0⟩ + 0.369|1⟩ + 0.104|2⟩ + 0.024|3⟩ + ⋯  + 0.0|7⟩ + 0.0|8⟩ + 0.0|9⟩ + 0.0|10⟩"
+@test stdout2str( destroy(b) ) == "SparseOperator(dim=11x11)\n  basis: Fock(cutoff=10)State = |0⟩⟨1| +1.414 |1⟩⟨2| +1.732 |2⟩⟨3| +2.0 |3⟩⟨4| + ⋯  +2.646 |6⟩⟨7| +2.828 |7⟩⟨8| +3.0 |8⟩⟨9| +3.162 |9⟩⟨10|"
+
+@test sprint(dirac, psi1) == "Ket(dim=3)\n  basis: NLevel(N=3)\n|ψ⟩ = |1⟩\n"
+@test sprint(dirac, dagger(psi1)) == "Bra(dim=3)\n  basis: NLevel(N=3)\n⟨ψ| = ⟨1|\n"
+@test sprint(dirac, dm(psi1)) == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)\nOperator = |1⟩⟨1|\n"
+@test sprint(dirac, us ⊗ ds) == "Ket(dim=4)\n  basis: [Spin(1/2) ⊗ Spin(1/2)]\n|ψ⟩ = |10⟩\n"
+@test sprint(dirac,  (psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3)) ) == "DenseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)\nOperator = |11⟩⟨2|\n"
+@test sprint(dirac,  sparse((psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3))) ) == "SparseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)\nOperator = |11⟩⟨2|\n"
+@test sprint((io, x) -> dirac(io, x, ""), psi1) == "Ket(dim=3)\n  basis: NLevel(N=3)\n|ψ⟩ = |1⟩\n"
+@test sprint((io, x) -> dirac(io, x, ""), dm(psi1)) == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)\nOperator = |1⟩⟨1|\n"
+
+@test md(psi1, "ψ") == "| ψ \\rangle = | 1 \\rangle"
+@test md(dagger(psi1), "ψ") == "\\langle ψ | = \\langle 1 |"
+@test md(dm(psi1), "ρ") == "ρ = | 1 \\rangle \\langle 1 |"
+@test md(dm(psi1) ⊗ dm(psi2), "ρ") == "ρ = | 21 \\rangle \\langle 21 |"
+@test md(coherentstate(b, alpha), "ψ") == "| ψ \\rangle = 0.923 | 0 \\rangle+0.369 | 1 \\rangle+0.104 | 2 \\rangle+0.024 | 3 \\rangle + \\cdots +0.0 | 7 \\rangle+0.0 | 8 \\rangle+0.0 | 9 \\rangle+0.0 | 10 \\rangle"
+@test md(im * coherentstate(b, alpha), "ψ") == "| ψ \\rangle = 0.923i | 0 \\rangle+0.369i | 1 \\rangle+0.104i | 2 \\rangle+0.024i | 3 \\rangle + \\cdots +0.0i | 7 \\rangle+0.0i | 8 \\rangle+0.0i | 9 \\rangle+0.0i | 10 \\rangle"
+@test md(spin1 ⊗ spin1 + spindown(SpinBasis(1//2)) ⊗ spindown(SpinBasis(1//2)), "\\psi") == "| \\psi \\rangle = | 00 \\rangle+1.0 | 11 \\rangle"
+@test md(spin1 ⊗ spin1 - spindown(SpinBasis(1//2)) ⊗ spindown(SpinBasis(1//2)), "\\psi") == "| \\psi \\rangle = | 00 \\rangle-1.0 | 11 \\rangle"
+@test md(spin1 + sigmaz(SpinBasis(1//2)) * sigmax(SpinBasis(1//2)) * spin1, "\\psi") == "| \\psi \\rangle = | 0 \\rangle-1.0 | 1 \\rangle"
+@test md(sigmax(SpinBasis(1//2)), "\\rho") == "\\rho = | 0 \\rangle \\langle 1 |+ | 1 \\rangle \\langle 0 |"
+@test md(sigmaz(SpinBasis(1//2)), "\\rho") == "\\rho = | 0 \\rangle \\langle 0 |-1.0 | 1 \\rangle \\langle 1 |"
+@test md(sigmay(SpinBasis(1//2)), "\\rho") == "\\rho = -i | 0 \\rangle \\langle 1 |+i | 1 \\rangle \\langle 0 |"
+@test md(sigmax(SpinBasis(1//2)) + sigmay(SpinBasis(1//2)), "\\rho") == "\\rho = (1.0-i) | 0 \\rangle \\langle 1 |+(1.0+i) | 1 \\rangle \\langle 0 |"
+@test md(sigmay(SpinBasis(1//2)) + sigmaz(SpinBasis(1//2)), "\\rho") == "\\rho = | 0 \\rangle \\langle 0 |-i | 0 \\rangle \\langle 1 |+i | 1 \\rangle \\langle 0 |-1.0 | 1 \\rangle \\langle 1 |"
+
+
+
+################################################################################
+DiracNotation.set_properties(standard_order=false)
+DiracNotation.set_properties(isdirac=false)
+################################################################################
+@test sprint(show, us ⊗ ds) == "Ket(dim=4)\n  basis: [Spin(1/2) ⊗ Spin(1/2)]\n 0.0+0.0im\n 0.0+0.0im\n 1.0+0.0im\n 0.0+0.0im"
+@test sprint(show, dm(us ⊗ ds)) == "DenseOperator(dim=4x4)\n  basis: [Spin(1/2) ⊗ Spin(1/2)]\n 0.0+0.0im  0.0+0.0im  0.0+0.0im  0.0+0.0im\n 0.0+0.0im  0.0+0.0im  0.0+0.0im  0.0+0.0im\n 0.0+0.0im  0.0+0.0im  1.0+0.0im  0.0+0.0im\n 0.0+0.0im  0.0+0.0im  0.0+0.0im  0.0+0.0im"
+@test sprint(show, sigmax(SpinBasis(1//2)) ⊗ sigmay(SpinBasis(1//2))) == "SparseOperator(dim=4x4)\n  basis: [Spin(1/2) ⊗ Spin(1/2)]\n  [4, 1]  =  0.0+1.0im\n  [3, 2]  =  0.0+1.0im\n  [2, 3]  =  0.0-1.0im\n  [1, 4]  =  0.0-1.0im"
+@test stdout2str(psi1) == sprint(show, psi1)
+@test stdout2str(dagger(psi1)) == sprint(show, dagger(psi1))
+@test stdout2str(psi1 ⊗ psi1) == sprint(show, psi1 ⊗ psi1)
+@test stdout2str(dagger(psi1 ⊗ psi1)) == sprint(show, dagger(psi1 ⊗ psi1))
+@test stdout2str(dagger(psi1 ⊗ psi2)) == sprint(show, dagger(psi1 ⊗ psi2))
+@test stdout2str(dm(psi1)) == sprint(show, dm(psi1))
+@test stdout2str(dm(psi1) * im) == sprint(show, dm(psi1) * im)
+@test stdout2str(dm(spinup(SpinBasis(1//2))) + dm(spindown(SpinBasis(1//2)))) == sprint(show, dm(spinup(SpinBasis(1//2))) + dm(spindown(SpinBasis(1//2))))
+@test stdout2str(dm(spinup(SpinBasis(1//2))) - dm(spindown(SpinBasis(1//2)))) == sprint(show, dm(spinup(SpinBasis(1//2))) - dm(spindown(SpinBasis(1//2))))
+@test stdout2str(sparse(dm(psi1))) == sprint(show, sparse(dm(psi1)))
+@test stdout2str(psi1 ⊗ dagger(psi2)) == sprint(show, psi1 ⊗ dagger(psi2))
+@test stdout2str(sparse(psi1 ⊗ dagger(psi2))) == sprint(show, sparse(psi1 ⊗ dagger(psi2)))
+@test stdout2str((psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3))) == sprint(show, (psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3)))
+@test stdout2str(sigmay(SpinBasis(1//2)) * spin1) == sprint(show, sigmay(SpinBasis(1//2)) * spin1)
+@test stdout2str( dagger(sigmay(SpinBasis(1//2)) * spin1) ) == sprint(show, dagger(sigmay(SpinBasis(1//2)) * spin1))
+@test stdout2str( spin1 + sigmax(SpinBasis(1//2)) * spin1 ) == sprint(show, spin1 + sigmax(SpinBasis(1//2)) * spin1)
+@test stdout2str( spin1 + sigmaz(SpinBasis(1//2)) * sigmax(SpinBasis(1//2)) * spin1 ) == sprint(show, spin1 + sigmaz(SpinBasis(1//2)) * sigmax(SpinBasis(1//2)) * spin1)
+@test stdout2str( coherentstate(b, alpha) ) == sprint(show, coherentstate(b, alpha))
+@test stdout2str( destroy(b) ) == sprint(show, destroy(b))
+
+@test sprint(dirac, psi1) == "Ket(dim=3)\n  basis: NLevel(N=3)\n|ψ⟩ = |1⟩\n"
+@test sprint(dirac, dagger(psi1)) == "Bra(dim=3)\n  basis: NLevel(N=3)\n⟨ψ| = ⟨1|\n"
+@test sprint(dirac, dm(psi1)) == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)\nOperator = |1⟩⟨1|\n"
+@test sprint(dirac, us ⊗ ds) == "Ket(dim=4)\n  basis: [Spin(1/2) ⊗ Spin(1/2)]\n|ψ⟩ = |10⟩\n"
+@test sprint(dirac,  (psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3)) ) == "DenseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)\nOperator = |11⟩⟨2|\n"
+@test sprint(dirac,  sparse((psi1 ⊗ psi1)⊗ dagger(basisstate(NLevelBasis(10), 3))) ) == "SparseOperator(dim=9x10)\n  basis left:  [NLevel(N=3) ⊗ NLevel(N=3)]\n  basis right: NLevel(N=10)\nOperator = |11⟩⟨2|\n"
+@test sprint((io, x) -> dirac(io, x, ""), psi1) == "Ket(dim=3)\n  basis: NLevel(N=3)\n|ψ⟩ = |1⟩\n"
+@test sprint((io, x) -> dirac(io, x, ""), dm(psi1)) == "DenseOperator(dim=3x3)\n  basis: NLevel(N=3)\nOperator = |1⟩⟨1|\n"
+
+@test md(psi1, "ψ") == "| ψ \\rangle = | 1 \\rangle"
+@test md(dagger(psi1), "ψ") == "\\langle ψ | = \\langle 1 |"
+@test md(dm(psi1), "ρ") == "ρ = | 1 \\rangle \\langle 1 |"
+@test md(dm(psi1) ⊗ dm(psi2), "ρ") == "ρ = | 21 \\rangle \\langle 21 |"
+@test md(coherentstate(b, alpha), "ψ") == "| ψ \\rangle = 0.923 | 0 \\rangle+0.369 | 1 \\rangle+0.104 | 2 \\rangle+0.024 | 3 \\rangle + \\cdots +0.0 | 7 \\rangle+0.0 | 8 \\rangle+0.0 | 9 \\rangle+0.0 | 10 \\rangle"
+@test md(im * coherentstate(b, alpha), "ψ") == "| ψ \\rangle = 0.923i | 0 \\rangle+0.369i | 1 \\rangle+0.104i | 2 \\rangle+0.024i | 3 \\rangle + \\cdots +0.0i | 7 \\rangle+0.0i | 8 \\rangle+0.0i | 9 \\rangle+0.0i | 10 \\rangle"
+@test md(spin1 ⊗ spin1 + spindown(SpinBasis(1//2)) ⊗ spindown(SpinBasis(1//2)), "\\psi") == "| \\psi \\rangle = | 00 \\rangle+1.0 | 11 \\rangle"
+@test md(spin1 ⊗ spin1 - spindown(SpinBasis(1//2)) ⊗ spindown(SpinBasis(1//2)), "\\psi") == "| \\psi \\rangle = | 00 \\rangle-1.0 | 11 \\rangle"
+@test md(spin1 + sigmaz(SpinBasis(1//2)) * sigmax(SpinBasis(1//2)) * spin1, "\\psi") == "| \\psi \\rangle = | 0 \\rangle-1.0 | 1 \\rangle"
+@test md(sigmax(SpinBasis(1//2)), "\\rho") == "\\rho = | 0 \\rangle \\langle 1 |+ | 1 \\rangle \\langle 0 |"
+@test md(sigmaz(SpinBasis(1//2)), "\\rho") == "\\rho = | 0 \\rangle \\langle 0 |-1.0 | 1 \\rangle \\langle 1 |"
+@test md(sigmay(SpinBasis(1//2)), "\\rho") == "\\rho = -i | 0 \\rangle \\langle 1 |+i | 1 \\rangle \\langle 0 |"
+@test md(sigmax(SpinBasis(1//2)) + sigmay(SpinBasis(1//2)), "\\rho") == "\\rho = (1.0-i) | 0 \\rangle \\langle 1 |+(1.0+i) | 1 \\rangle \\langle 0 |"
+@test md(sigmay(SpinBasis(1//2)) + sigmaz(SpinBasis(1//2)), "\\rho") == "\\rho = | 0 \\rangle \\langle 0 |-i | 0 \\rangle \\langle 1 |+i | 1 \\rangle \\langle 0 |-1.0 | 1 \\rangle \\langle 1 |"
+
+@test mirror_world_index(1, [2,2]) == 1
+@test mirror_world_index(2, [2,2]) == 3
+@test mirror_world_index(3, [2,2]) == 2
+@test mirror_world_index(4, [2,2]) == 4
+@test mirror_world_index(2, [2,3]) == 3
+@test mirror_world_index(4, [2,3]) == 2
