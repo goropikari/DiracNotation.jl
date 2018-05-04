@@ -109,7 +109,7 @@ function show_vector_std(io::IO, v, dims, opn, cls)
     end
     print(io, prefix)
     if limited && Base._length(v) > 20
-        inds = indices1(v)
+        inds = Base.indices1(v)
         show_delim_array_std(io, v, dims, opn, ",", "", false, inds[1], inds[1]+9)
         print(io, "  \u2026  ")
         show_delim_array_std(io, v, dims, "", ",", cls, false, inds[end-9], inds[end])
