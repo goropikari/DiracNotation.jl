@@ -1,10 +1,12 @@
 using DiracNotation, QuantumOptics
-import DiracNotation: md, mirror_world_index
+import DiracNotation: md, mirror_world_index, showarray_std, showsparsearray_std
 @static if VERSION < v"0.7.0-DEV.2005"
     using Base.Test
 else
     using Test
 end
+
+include("showarray_stdord.jl")
 
 psi1 = basisstate(NLevelBasis(3), 2)
 psi2 = basisstate(NLevelBasis(5), 3)
@@ -19,7 +21,7 @@ b = FockBasis(N)
 alpha = 0.4
 
 # ref.
-# Capture the output of Julia's console: Michael Hatherly's code and Steven G. Johnson's code
+# Capture the output of Julia's console: Michael Hatherly's code
 # https://groups.google.com/forum/#!topic/julia-users/3wGChHHYoxo
 function stdout2str(x)
     buf = IOBuffer();

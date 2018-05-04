@@ -489,6 +489,32 @@ function ind2Nary(m::Int, dims::Vector{Int})
     str *= string(m)
     return str
 end
+"""
+    ind2Nary_array(m::Int, dims::Vector{Int})
+
+Opposite to `Nary2ind`.
+
+# Example
+```
+julia> dims = [2,2,3];
+
+julia> for i in 1:prod(dims)
+           println(i,": ", ind2Nary_array(i,dims))
+       end
+1: [0, 0, 0]
+2: [0, 0, 1]
+3: [0, 0, 2]
+4: [0, 1, 0]
+5: [0, 1, 1]
+6: [0, 1, 2]
+7: [1, 0, 0]
+8: [1, 0, 1]
+9: [1, 0, 2]
+10: [1, 1, 0]
+11: [1, 1, 1]
+12: [1, 1, 2]
+```
+"""
 function ind2Nary_array(m::Int, dims::Vector{Int})
     m = m - 1
     nq = length(dims)
@@ -503,10 +529,35 @@ function ind2Nary_array(m::Int, dims::Vector{Int})
     ar[end] = m
     return ar
 end
+
 """
     Nary2ind(x, dims) -> index
 
-Return index from n-ary array and dimension list
+Convert composite N-arys to index.
+
+# Example
+```
+julia> dims = [2,2,3];
+
+julia> Nary2ind([1,1,0], dims)
+10
+
+julia> for i in 1:prod(dims)
+           println(i,": ", Nary2ind(ind2Nary_array(i,dims),dims), ": ", ind2Nary_array(i,dims))
+       end
+1: 1: [0, 0, 0]
+2: 2: [0, 0, 1]
+3: 3: [0, 0, 2]
+4: 4: [0, 1, 0]
+5: 5: [0, 1, 1]
+6: 6: [0, 1, 2]
+7: 7: [1, 0, 0]
+8: 8: [1, 0, 1]
+9: 9: [1, 0, 2]
+10: 10: [1, 1, 0]
+11: 11: [1, 1, 1]
+12: 12: [1, 1, 2]
+```
 """
 function Nary2ind(x::Vector{Int}, dims::Vector{Int})
     tmp = 0
@@ -522,29 +573,36 @@ function Nary2ind(x::Vector{Int}, dims::Vector{Int})
     tmp += x[end] + 1
 end
 
-function mirror_world_index(i::Int, dims::Vector{Int})
-    return Nary2ind( reverse(ind2Nary_array(i, dims)), reverse(dims)  )
+"""
+    mirror_world_index(idx, dims)
+
+Convert index of standard order to that of reversed order.
+This function is named after the book, '鏡の中の物理学' (Physics in the mirror),
+written by Tomonaga Shin'ichirō (Japanese physicist).
+"""
+function mirror_world_index(idx::Int, dims::Vector{Int})
+    return Nary2ind( reverse(ind2Nary_array(idx, dims)), reverse(dims)  )
 end
 
-"""
-    permuted_densedata2(x::DenseOperator)
-
-(Experimental) Maybe this is equivalent to permuted_densedata in QuantumOptics.jl.
-But I cannot guarantee.
-"""
-function permuted_densedata2(x::DenseOperator)
-    lshape = x.basis_l.shape
-    rshape = x.basis_r.shape
-    lbn = length(lshape)
-    rbn = length(rshape)
-
-    perm = Int[collect(lbn:-1:1); collect(lbn+rbn:-1:lbn+1)]
-    data = reshape(x.data,  [lshape; rshape]...)
-    data = permutedims(data, perm)
-    data = reshape(data, size(x.data))
-
-    return round.(data, machineprecorder)
-end
+# """
+#     permuted_densedata2(x::DenseOperator)
+#
+# (Experimental) Maybe this is equivalent to permuted_densedata in QuantumOptics.jl.
+# But I cannot guarantee.
+# """
+# function permuted_densedata2(x::DenseOperator)
+#     lshape = x.basis_l.shape
+#     rshape = x.basis_r.shape
+#     lbn = length(lshape)
+#     rbn = length(rshape)
+#
+#     perm = Int[collect(lbn:-1:1); collect(lbn+rbn:-1:lbn+1)]
+#     data = reshape(x.data,  [lshape; rshape]...)
+#     data = permutedims(data, perm)
+#     data = reshape(data, size(x.data))
+#
+#     return round.(data, machineprecorder)
+# end
 
 
 """
