@@ -20,7 +20,7 @@ julia> using DiracNotation, LinearAlgebra, Random; Random.seed!(0);
 
 julia> ket = normalize(rand(4)); bra = ket';
 
-julia> dirac(ket)
+julia> dirac(ket) # if the dimension of state is power of 2 ( 2^n ), it is interpreted as n-qubit system.
 |ψ⟩ = 0.658|00⟩+0.728|01⟩+0.132|10⟩+0.142|11⟩
 
 julia> dirac(bra)
@@ -36,6 +36,14 @@ julia> rightdims = [2];
 
 julia> dirac(op, leftdims, rightdims)
 ρ = 0.279|0⟩⟨0|+0.0423|0⟩⟨1|+0.203|1⟩⟨0|+0.0683|1⟩⟨1|
+
+julia> DiracNotation.set_properties(numhead=10, displayall=false)
+
+julia> op = rand(6,4);
+
+# if the state is not qubits system, you have to specify the dimension of domain and codomain explicitly.
+julia> dirac(op, [2,3], [2,2])
+ρ = 0.362|00⟩⟨00|+0.167|00⟩⟨01|+0.469|00⟩⟨10|+0.0668|00⟩⟨11|+0.973|01⟩⟨00|+0.655|01⟩⟨01|+0.0624|01⟩⟨10|+0.157|01⟩⟨11|+0.586|02⟩⟨00|+0.576|02⟩⟨01| +...
 ```
 
 
@@ -65,5 +73,7 @@ A = 0.27888|0⟩⟨0|+0.0423017|0⟩⟨1|+0.203477|1⟩⟨0|+0.0682693|1⟩⟨1|
 
 
 ## Example on IJulia
-On IJulia, Dirac notation is rendered by MathJax.
+On IJulia, Dirac notation is rendered as MathJax.
+
+![mathjax](examples/mathjax.png)
 - [Example](./examples/example.ipynb)
