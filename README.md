@@ -1,110 +1,69 @@
 # DiracNotation
 
 [![Build Status](https://travis-ci.org/goropikari/DiracNotation.jl.svg?branch=master)](https://travis-ci.org/goropikari/DiracNotation.jl)
-[![Build status](https://ci.appveyor.com/api/projects/status/e1r7f7i05myjnyg0?svg=true)](https://ci.appveyor.com/project/goropikari/quantuminformation-jl)
+[![Build status](https://ci.appveyor.com/api/projects/status/fjmycb3eua297348?svg=true)](https://ci.appveyor.com/project/goropikari/diracnotation-jl)
 [![Coverage Status](https://coveralls.io/repos/goropikari/DiracNotation.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/goropikari/DiracNotation.jl?branch=master)
 [![codecov.io](http://codecov.io/github/goropikari/DiracNotation.jl/coverage.svg?branch=master)](http://codecov.io/github/goropikari/DiracNotation.jl?branch=master)
 
-[DiracNotation.jl](https://github.com/goropikari/DiracNotation.jl) is a package to print Dirac notation rendering for Bra, Ket, and Operator in [QuantumOptics.jl](https://github.com/qojulia/QuantumOptics.jl).  
 By using this package, matrix representation is changed into Dirac notation.
 
 ## Installation
 ```julia
-Pkg.clone("https://github.com/goropikari/DiracNotation.jl")
+using Pkg
+Pkg.pkg"add https://github.com/goropikari/DiracNotation.jl"
 ```
 
 ## Usage
-This package is used with [QuantumOptics.jl](https://github.com/qojulia/QuantumOptics.jl).
-After importing this package, all states are shown by Dirac Notation.
-
 ### Simple example
 ```julia
-julia> using QuantumOptics, DiracNotation
+julia> using DiracNotation, LinearAlgebra, Random; Random.seed!(0);
 
-julia> basis = SpinBasis(1//2)
-Spin(1/2)
+julia> ket = normalize(rand(4)); bra = ket';
 
-julia> srand(2018);
+julia> dirac(ket)
+|ψ⟩ = 0.658|00⟩+0.728|01⟩+0.132|10⟩+0.142|11⟩
 
-julia> randstate(SpinBasis(1//2) ⊗ SpinBasis(3//2))
-Ket(dim=8)
-  basis: [Spin(1/2) ⊗ Spin(3/2)]
-|State⟩ = (0.263+0.044i)|00⟩ + (0.105+0.274i)|01⟩ + (0.394+0.304i)|02⟩ + (0.39+0.388i)|03⟩ + (0.29+0.289i)|10⟩ + (0.061+0.246i)|11⟩ + (0.143+0.105i)|12⟩ + (0.139+0.1i)|13⟩
+julia> dirac(bra)
+⟨ψ| = 0.658⟨00|+0.728⟨01|+0.132⟨10|+0.142⟨11|
 
-julia> psi1 = basisstate(basis, 1)
-Ket(dim=2)
-  basis: Spin(1/2)
-|State⟩ = |0⟩
+julia> DiracNotation.set_properties(precision=3)
 
-julia> psi2 = sigmax(basis) * psi1
-Ket(dim=2)
-  basis: Spin(1/2)
-|State⟩ = |1⟩
+julia> op = rand(2,2);
 
-julia> plus = 1/sqrt(2) * (psi1 + psi2)
-Ket(dim=2)
-  basis: Spin(1/2)
-|State⟩ = 0.707|0⟩ + 0.707|1⟩
+julia> leftdims = [2];
 
-julia> bell = (dm(psi1) ⊗ one(basis) + dm(psi2) ⊗ sigmax(basis)) * (plus ⊗ psi1)
-Ket(dim=4)
-  basis: [Spin(1/2) ⊗ Spin(1/2)]
-|State⟩ = 0.707|00⟩ + 0.707|11⟩
+julia> rightdims = [2];
 
-julia> dm(bell)
-DenseOperator(dim=4x4)
-  basis: [Spin(1/2) ⊗ Spin(1/2)]
-State = 0.5 |00⟩⟨00| +0.5 |00⟩⟨11| +0.5 |11⟩⟨00| +0.5 |11⟩⟨11|
+julia> dirac(op, leftdims, rightdims)
+ρ = 0.279|0⟩⟨0|+0.0423|0⟩⟨1|+0.203|1⟩⟨0|+0.0683|1⟩⟨1|
 ```
 
-
-### change the default state name
-```julia
-julia> DiracNotation.set_properties(statename="ψ")
-
-julia> bell
-Ket(dim=4)
-  basis: [Spin(1/2) ⊗ Spin(1/2)]
-|ψ⟩ = 0.707|00⟩ + 0.707|11⟩
-```
 
 ### Display a state with arbitrary state name.
 ```julia
-julia> dirac(psi1, "ϕ") # display state with arbitrary state name.
-Ket(dim=2)
-  basis: Spin(1/2)
-|ϕ⟩ = |0⟩
+julia> dirac(ket, "ϕ")
+|ϕ⟩ = 0.658|00⟩+0.728|01⟩+0.132|10⟩+0.142|11⟩
 
-julia> ρAB = dm(psi1) ⊗ dm(psi2);
-
-julia> dirac(ρAB, "ρAB")
-DenseOperator(dim=4x4)
-  basis: [Spin(1/2) ⊗ Spin(1/2)]
-ρAB = |01⟩⟨01|
-
-julia> ρB = ptrace(ρAB, 1);
-
-julia> dirac(ρB, "ρB")
-DenseOperator(dim=2x2)
-  basis: Spin(1/2)
-ρB = |1⟩⟨1|
+julia> dirac(op, "A")
+A = 0.279|0⟩⟨0|+0.0423|0⟩⟨1|+0.203|1⟩⟨0|+0.0683|1⟩⟨1|
 ```
 
 ### Restore to original style
 ```julia
-julia> DiracNotation.set_properties(isdirac=false)
+DiracNotation.reset_properties()
+dirac(ket, "ϕ")
+dirac(op, "A")
 
-julia> bell
-Ket(dim=4)
-  basis: [Spin(1/2) ⊗ Spin(1/2)]
- 0.707107+0.0im
-      0.0+0.0im
-      0.0+0.0im
- 0.707107+0.0im
+julia> DiracNotation.reset_properties()
+
+julia> dirac(ket, "ϕ")
+|ϕ⟩ = 0.65825|00⟩+0.727547|01⟩+0.131519|10⟩+0.141719|11⟩
+
+julia> dirac(op, "A")
+A = 0.27888|0⟩⟨0|+0.0423017|0⟩⟨1|+0.203477|1⟩⟨0|+0.0682693|1⟩⟨1|
 ```
 
 
 ## Example on IJulia
-On IJulia, Dirac notation is rendered by MathJax.  
-- [QuantumOptics version](https://nbviewer.jupyter.org/github/goropikari/DiracNotation.jl/blob/master/examples/QuantumOptics.ipynb)
-- [DiracNotation version](https://nbviewer.jupyter.org/github/goropikari/DiracNotation.jl/blob/master/examples/braket.ipynb)
+On IJulia, Dirac notation is rendered by MathJax.
+- [Example](./examples/example.ipynb)
