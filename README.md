@@ -6,7 +6,7 @@
 [![codecov.io](http://codecov.io/github/goropikari/DiracNotation.jl/coverage.svg?branch=master)](http://codecov.io/github/goropikari/DiracNotation.jl?branch=master)
 
 By using this package, matrix representation is changed into Dirac notation.
-This package supports for [QuantumOptics.jl](https://github.com/qojulia/QuantumOptics.jl)
+This package supports [QuantumOptics.jl](https://github.com/qojulia/QuantumOptics.jl)
 ## Installation
 ```julia
 using Pkg
