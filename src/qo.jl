@@ -4,7 +4,7 @@ function dirac(io::IO, state::Union{Ket, Bra}, statename="ψ")
     summary(io, state)
     data = state.data
     shape = state.basis.shape
-    reverse!(shape)
+    shape = reverse(shape)
     if _islatex && isdefined(Main, :IJulia) && Main.IJulia.inited # for IJulia rendering
         if statename == "ψ"
             statename = "\\psi"
@@ -33,8 +33,8 @@ function dirac(io::IO, state::Union{DenseOperator, SparseOperator}, statename="�
     lshape = state.basis_l.shape
     rshape = state.basis_r.shape
     # print_dirac(io, data, lshape, rshape, statename)
-    reverse!(lshape)
-    reverse!(rshape)
+    lshape = reverse(lshape)
+    rshape = reverse(rshape)
     if _islatex && isdefined(Main, :IJulia) && Main.IJulia.inited # for IJulia rendering
         if statename == "ρ"
             statename = "\\rho"
