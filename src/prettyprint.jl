@@ -4,12 +4,18 @@ import Base.Grisu: _show
 export dirac
 
 const SHORTEST = 1
-const FIXED = 2
 const PRECISION = 3
 
 
 """
-    set_properties
+    set_properties(; kw...)
+
+# Arguments
+- precision::Int.
+- islatex::Bool. true -> rendered by mathjax on IJulia
+- displayall::Bool. true -> display all terms.
+- numhead: Display the first part of terms. Default is 5 terms.
+- newline::Bool.
 """
 function set_properties(; precision::Int=_precision,
                           islatex::Bool=_islatex,
@@ -23,7 +29,6 @@ function set_properties(; precision::Int=_precision,
     global _newline = newline
     nothing
 end
-# set_properties(precision=0, islatex=true, displayall)
 const PureState = Union{Vector, Adjoint{T,Vector{T}}, Transpose{T,Vector{T}}} where T
 const MixedState =  Union{Matrix, SparseMatrixCSC, Adjoint{T,Matrix{T}}, Transpose{T,Matrix{T}}} where T
 
@@ -33,7 +38,28 @@ end
 reset_properties()
 
 """
-    dirac
+    dirac(state::PureState, statename::String="ψ")
+    dirac(io::IO, state::PureState, statename::String="ψ")
+    dirac(state::PureState, dims::Vector{Int}, statename::String="ψ")
+    dirac(io::IO, state::PureState, dims::Vector{Int}, statename::String="ψ")
+
+Display a vector as Dirac notation.
+
+# Example
+```
+julia> using Random; Random.seed!(0);
+
+julia> dirac(randn(Complex{Float64}, 2))
+|ψ⟩ = (0.480201+0.585777im)|0⟩+(-0.249614-0.0953561im)|1⟩
+
+julia> qutrit = rand(Complex{Float64},3);
+
+julia> dirac(qutrit, [3])
+|ψ⟩ = (0.27888+0.203477im)|0⟩+(0.0423017+0.0682693im)|1⟩+(0.361828+0.973216im)|2⟩
+
+dirac(qubitqutrit, [2,3])
+|ψ⟩ = (-0.487131-0.539384im)|00⟩+(0.281063+0.573909im)|01⟩+(-0.24491-0.132634im)|02⟩+(-1.1365-1.75419im)|10⟩+(1.60954+0.155347im)|11⟩+(-0.0828287-0.42515im)|12⟩
+```
 """
 function dirac(io::IO, state::PureState, dims::Vector{Int}, statename::String="ψ")
     if _islatex && isdefined(Main, :IJulia) && Main.IJulia.inited # for IJulia rendering
@@ -55,6 +81,29 @@ function dirac(io::IO, state::PureState, statename::String="ψ")
 end
 dirac(state::PureState, statename::String="ψ") = dirac(stdout, state, statename)
 
+"""
+    dirac(state::MixedState, statename::String="ρ")
+    dirac(io::IO, state::MixedState, statename::String="ρ")
+    dirac(state::MixedState, dims::Vector{Int}, statename::String="ρ")
+    dirac(state::MixedState, ldims::Vector{Int}, rdims::Vector{Int}, statename::String="ρ")
+    dirac(io::IO, state::MixedState, ldims::Vector{Int}, rdims::Vector{Int}, statename::String="ρ")
+
+Display a matrix as Dirac notation.
+# Example
+```
+julia> using Random; Random.seed!(0);
+
+julia> op1 = randn(Complex{Float64}, 2,2);
+
+julia> dirac(op1)
+ρ = (0.480201+0.585777im)|0⟩⟨0|+(0.414801+0.210248im)|0⟩⟨1|+(-0.249614-0.0953561im)|1⟩⟨0|+(0.0459249-0.0770869im)|1⟩⟨1|
+
+julia> op2 = randn(Complex{Float64}, 4,3);
+
+julia> dirac(op2, [2,2], [3])
+ρ = (-0.363602+1.11322im)|00⟩⟨0|+(-1.1365-1.75419im)|00⟩⟨1|+(0.197612+0.078787im)|00⟩⟨2|+(-0.487131-0.539384im)|01⟩⟨0|+(1.60954+0.155347im)|01⟩⟨1|+(-0.253062+0.334967im)|01⟩⟨2|+(0.281063+0.573909im)|10⟩⟨0|+(-0.0828287-0.42515im)|10⟩⟨1|+(0.212297-0.539294im)|10⟩⟨2|+(-0.24491-0.132634im)|11⟩⟨0|+(0.807711-0.0626612im)|11⟩⟨1|+(1.00625+0.288773im)|11⟩⟨2|
+```
+"""
 function dirac(io::IO, state::MixedState, ldims::Vector{Int}, rdims::Vector{Int}, statename::String="ρ")
     if _islatex && isdefined(Main, :IJulia) && Main.IJulia.inited # for IJulia rendering
         if statename == "ρ"
@@ -210,14 +259,14 @@ function print_dirac_term(io::IO, row::Int, col::Int,
     print(io, s, braket[1][1], ind2Nary(row, ldims), braket[1][2], braket[2][1], ind2Nary(col, rdims), braket[2][2])
 end
 
-
-function print_precision_value(io::IO, z::Complex, isfirstterm::Bool) # https://github.com/JuliaLang/julia/blob/02aa9bbc258a380b5c9fbe2f2d3276a90a72abca/base/complex.jl#L182-L197
+# modify a part of Julia.
+# https://github.com/JuliaLang/julia/blob/02aa9bbc258a380b5c9fbe2f2d3276a90a72abca/base/complex.jl#L182-L197.
+function print_precision_value(io::IO, z::Complex, isfirstterm::Bool)
     r, i = reim(z)
     istwoterms = !iszero(r) && !iszero(i)
     istwoterms && !isfirstterm && print(io, "+") # both real and imaginary part are nonzero and not first term
     istwoterms && print(io, "(")
     compact = get(io, :compact, false)
-    # !isfirstterm && r > 0 && print(io, "+")
     !iszero(r) && print_precision_value(io, r, isfirstterm, istwoterms, true)
 
     if istwoterms
@@ -271,19 +320,9 @@ function print_precision_value(io::IO, val::Integer, isfirstterm::Bool, istwoter
         show(io, val)
     end
 end
-# function print_precision_value(io::IO, val::Integer, isfirstterm::Bool, istwoterms::Bool=false, ri::Bool=true)
-#     iszero(val) && return nothing
-#     if istwoterms  && (isone(val) || isone(-val))
-#         print_one(io, val, ri)
-#     else
-#         isone(-val) && return print(io, "-")
-#         isone(val) && isfirstterm && return print(io, "")
-#         isone(val) && !isfirstterm && return print(io, "+")
-#         val > 0 && isfirstterm && return print(io, val)
-#         val > 0 && return print(io, "+", val)
-#         show(io, val)
-#     end
-# end
+
+# modify a part of Julia.
+# https://github.com/JuliaLang/julia/blob/e2c98780e211c7b0887751b7eb2b7a141c2fd5e8/base/grisu/grisu.jl#L147-L153
 function print_float(io::IO, val::Union{Float64,Float32})
     if !iszero(_precision)
         _show(io, val, PRECISION, _precision, val isa Float64, true)
