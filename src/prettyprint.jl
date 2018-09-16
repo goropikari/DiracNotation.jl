@@ -16,24 +16,27 @@ const PRECISION = 3
 - displayall::Bool. true -> display all terms.
 - numhead: Display the first part of terms. Default is 5 terms.
 - newline::Bool.
+- imag_suffix::String.
 """
 function set_properties(; precision::Int=_precision,
                           islatex::Bool=_islatex,
                           displayall::Bool=_displayall,
                           numhead::Int=_numhead,
-                          newline::Bool=_newline)
+                          newline::Bool=_newline,
+                          imag_suffix::AbstractString=_imag_suffix)
     global _precision = precision
     global _islatex = islatex
     global _displayall = displayall
     global _numhead = numhead
     global _newline = newline
+    global _imag_suffix = imag_suffix
     nothing
 end
 const PureState = Union{Vector, Adjoint{T,Vector{T}}, Transpose{T,Vector{T}}} where T
 const MixedState =  Union{Matrix, SparseMatrixCSC, Adjoint{T,Matrix{T}}, Transpose{T,Matrix{T}}} where T
 
 function reset_properties()
-    set_properties(precision=0, islatex=true, displayall=true, numhead=5, newline=false)
+    set_properties(precision=0, islatex=true, displayall=true, numhead=5, newline=false, imag_suffix="im")
 end
 reset_properties()
 
@@ -134,7 +137,8 @@ dirac(state::MixedState, statename::String="ρ") = dirac(stdout, state, statenam
                         statename::String="ρ") where T <: Number
 """
 function print_dirac(io::IO, state::PureState, dims::Vector{Int}, statename::String="ψ")
-    io, braket = IO_braket(io, state)
+    io = IO_braket(io, state)
+    braket = getindex(io, :braket)
 
     isfirstterm = true
     s = "$(braket[1])$(statename)$(braket[2]) = "
@@ -168,7 +172,8 @@ function print_dirac(io::IO, state::MixedState,
                              statename::String="ρ") where T <: Number
     nrow, ncol = size(state)
     @assert nrow == prod(ldims) && ncol == prod(rdims)
-    io, braket = IO_braket(io, state)
+    io = IO_braket(io, state)
+    braket = getindex(io, :braket)
 
     isfirstterm = true
     print(io, statename, " = ")
@@ -209,7 +214,7 @@ function IO_braket(io::IO, state)
     if !haskey(io, :compact)
         io = IOContext(io, :compact => true)
     end
-    return io, braket
+    return io
 end
 
 function braket_str(state::PureState)
@@ -282,7 +287,7 @@ function print_precision_value(io::IO, z::Complex, isfirstterm::Bool)
     if !(isa(i,Integer) && !isa(i,Bool) || isa(i,AbstractFloat) && isfinite(i))
         print(io, "*")
     end
-    !iszero(i) && print(io, "im")
+    !iszero(i) && print(io, _imag_suffix)
     !iszero(r) && !iszero(i) && print(io, ")")
     return nothing
 end
