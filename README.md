@@ -7,6 +7,9 @@
 
 By using this package, matrix representation is changed into Dirac notation.
 This package supports [QuantumOptics.jl](https://github.com/qojulia/QuantumOptics.jl)
+
+![mathjax](examples/mathjax.png)
+
 ## Installation
 ```julia
 using Pkg
@@ -71,5 +74,4 @@ A = 0.361828|00⟩⟨00|+0.167036|00⟩⟨01|+0.469304|00⟩⟨10|+0.0668464|00�
 ## Example on IJulia
 On IJulia, Dirac notation is rendered as MathJax.
 
-![mathjax](examples/mathjax.png)
 - [Example](http://nbviewer.jupyter.org/github/goropikari/DiracNotation.jl/blob/master/examples/example.ipynb)
