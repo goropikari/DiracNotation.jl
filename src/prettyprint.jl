@@ -41,10 +41,10 @@ end
 reset_properties()
 
 """
-    dirac(state::PureState, statename::String="ψ")
-    dirac(io::IO, state::PureState, statename::String="ψ")
-    dirac(state::PureState, dims::Vector{Int}, statename::String="ψ")
-    dirac(io::IO, state::PureState, dims::Vector{Int}, statename::String="ψ")
+    dirac(state::PureState, statename::String="ψ"; header::Bool=false)
+    dirac(io::IO, state::PureState, statename::String="ψ"; header::Bool=false)
+    dirac(state::PureState, dims::Vector{Int}, statename::String="ψ"; header::Bool=false)
+    dirac(io::IO, state::PureState, dims::Vector{Int}, statename::String="ψ"; header::Bool=false)
 
 Display a vector as Dirac notation.
 
@@ -64,7 +64,10 @@ dirac(qubitqutrit, [2,3])
 |ψ⟩ = (-0.487131-0.539384im)|00⟩+(0.281063+0.573909im)|01⟩+(-0.24491-0.132634im)|02⟩+(-1.1365-1.75419im)|10⟩+(1.60954+0.155347im)|11⟩+(-0.0828287-0.42515im)|12⟩
 ```
 """
-function dirac(io::IO, state::PureState, dims::Vector{Int}, statename::String="ψ")
+function dirac(io::IO, state::PureState, dims::Vector{Int}, statename::String="ψ"; header::Bool=false)
+    if header
+        println(io, summary(state))
+    end
     if _islatex && isdefined(Main, :IJulia) && Main.IJulia.inited # for IJulia rendering
         if statename == "ψ"
             statename = "\\psi"
@@ -75,21 +78,21 @@ function dirac(io::IO, state::PureState, dims::Vector{Int}, statename::String="�
         print_dirac(io, state, dims, statename)
     end
 end
-dirac(state::PureState, dims::Vector{Int}, statename::String="ψ") = dirac(stdout, state, dims, statename)
-function dirac(io::IO, state::PureState, statename::String="ψ")
+dirac(state::PureState, dims::Vector{Int}, statename::String="ψ"; header::Bool=false) = dirac(stdout, state, dims, statename, header=header)
+function dirac(io::IO, state::PureState, statename::String="ψ"; header::Bool=false)
     n = log2(length(state))
     @assert isinteger(n)
     dims = fill(2, (Int(n), ))
-    dirac(io, state, dims, statename)
+    dirac(io, state, dims, statename, header=header)
 end
-dirac(state::PureState, statename::String="ψ") = dirac(stdout, state, statename)
+dirac(state::PureState, statename::String="ψ"; header::Bool=false) = dirac(stdout, state, statename, header=header)
 
 """
-    dirac(state::MixedState, statename::String="ρ")
-    dirac(io::IO, state::MixedState, statename::String="ρ")
-    dirac(state::MixedState, dims::Vector{Int}, statename::String="ρ")
-    dirac(state::MixedState, ldims::Vector{Int}, rdims::Vector{Int}, statename::String="ρ")
-    dirac(io::IO, state::MixedState, ldims::Vector{Int}, rdims::Vector{Int}, statename::String="ρ")
+    dirac(state::MixedState, statename::String="ρ"; header::Bool=false)
+    dirac(io::IO, state::MixedState, statename::String="ρ"; header::Bool=false)
+    dirac(state::MixedState, dims::Vector{Int}, statename::String="ρ"; header::Bool=false)
+    dirac(state::MixedState, ldims::Vector{Int}, rdims::Vector{Int}, statename::String="ρ"; header::Bool=false)
+    dirac(io::IO, state::MixedState, ldims::Vector{Int}, rdims::Vector{Int}, statename::String="ρ"; header::Bool=false)
 
 Display a matrix as Dirac notation.
 # Example
@@ -107,7 +110,10 @@ julia> dirac(op2, [2,2], [3])
 ρ = (-0.363602+1.11322im)|00⟩⟨0|+(-1.1365-1.75419im)|00⟩⟨1|+(0.197612+0.078787im)|00⟩⟨2|+(-0.487131-0.539384im)|01⟩⟨0|+(1.60954+0.155347im)|01⟩⟨1|+(-0.253062+0.334967im)|01⟩⟨2|+(0.281063+0.573909im)|10⟩⟨0|+(-0.0828287-0.42515im)|10⟩⟨1|+(0.212297-0.539294im)|10⟩⟨2|+(-0.24491-0.132634im)|11⟩⟨0|+(0.807711-0.0626612im)|11⟩⟨1|+(1.00625+0.288773im)|11⟩⟨2|
 ```
 """
-function dirac(io::IO, state::MixedState, ldims::Vector{Int}, rdims::Vector{Int}, statename::String="ρ")
+function dirac(io::IO, state::MixedState, ldims::Vector{Int}, rdims::Vector{Int}, statename::String="ρ"; header::Bool=false)
+    if header
+        println(io, summary(state))
+    end
     if _islatex && isdefined(Main, :IJulia) && Main.IJulia.inited # for IJulia rendering
         if statename == "ρ"
             statename = "\\hat{\\rho}"
@@ -118,16 +124,16 @@ function dirac(io::IO, state::MixedState, ldims::Vector{Int}, rdims::Vector{Int}
         print_dirac(io, state, ldims, rdims, statename)
     end
 end
-dirac(state::MixedState, ldims::Vector{Int}, rdims::Vector{Int}, statename::String="ρ") = dirac(stdout, state, ldims, rdims, statename)
-dirac(state::MixedState, dims::Vector{Int}, statename::String="ρ") = dirac(stdout, state, dims, dims, statename)
-function dirac(io::IO, state::MixedState, statename::String="ρ")
+dirac(state::MixedState, ldims::Vector{Int}, rdims::Vector{Int}, statename::String="ρ"; header::Bool=false) = dirac(stdout, state, ldims, rdims, statename, header=header)
+dirac(state::MixedState, dims::Vector{Int}, statename::String="ρ"; header::Bool=false) = dirac(stdout, state, dims, dims, statename, header=header)
+function dirac(io::IO, state::MixedState, statename::String="ρ"; header::Bool=false)
     row, col = size(state)
     n, m = log2(row), log2(col)
     @assert isinteger(n) || isinteger(m)
     ldims, rdims = fill(2, (Int(n), )), fill(2, (Int(m), ))
-    dirac(io, state, ldims, rdims, statename)
+    dirac(io, state, ldims, rdims, statename, header=header)
 end
-dirac(state::MixedState, statename::String="ρ") = dirac(stdout, state, statename)
+dirac(state::MixedState, statename::String="ρ"; header::Bool=false) = dirac(stdout, state, statename, header=header)
 
 """
     print_dirac(io::IO, state::PureState, dims::Vector{Int}, statename::String="ψ")
