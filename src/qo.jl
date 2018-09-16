@@ -1,10 +1,9 @@
 using QuantumOptics
 
-function dirac(io::IO, state::Union{Ket, Bra}, statename="ψ")
-    summary(io, state)
+function dirac(io::IO, state::Union{Ket, Bra}, statename="ψ"; header::Bool=false)
+    header && summary(io, state)
     data = state.data
-    shape = state.basis.shape
-    shape = reverse(shape)
+    shape = reverse(state.basis.shape)
     if _islatex && isdefined(Main, :IJulia) && Main.IJulia.inited # for IJulia rendering
         if statename == "ψ"
             statename = "\\psi"
@@ -23,18 +22,17 @@ function dirac(io::IO, state::Union{Ket, Bra}, statename="ψ")
         end
     end
 end
-dirac(state::Union{Ket, Bra}, statename="ψ") = dirac(stdout, state, statename)
+dirac(state::Union{Ket, Bra}, statename="ψ"; header::Bool=false) = dirac(stdout, state, statename, header=header)
 
 
-function dirac(io::IO, state::Union{DenseOperator, SparseOperator}, statename="ρ")
-    summary(io, state)
-    println(io)
+function dirac(io::IO, state::Union{DenseOperator, SparseOperator}, statename="ρ"; header::Bool=false)
+    if header
+        summary(io, state)
+        println(io)
+    end
     data = state.data
-    lshape = state.basis_l.shape
-    rshape = state.basis_r.shape
-    # print_dirac(io, data, lshape, rshape, statename)
-    lshape = reverse(lshape)
-    rshape = reverse(rshape)
+    lshape = reverse(state.basis_l.shape)
+    rshape = reverse(state.basis_r.shape)
     if _islatex && isdefined(Main, :IJulia) && Main.IJulia.inited # for IJulia rendering
         if statename == "ρ"
             statename = "\\rho"
@@ -46,4 +44,4 @@ function dirac(io::IO, state::Union{DenseOperator, SparseOperator}, statename="�
         print_dirac(io, data, lshape, rshape, statename)
     end
 end
-dirac(state::Union{DenseOperator, SparseOperator}, statename="ρ") = dirac(stdout, state, statename)
+dirac(state::Union{DenseOperator, SparseOperator}, statename="ρ"; header::Bool=false) = dirac(stdout, state, statename, header=header)
