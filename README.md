@@ -13,7 +13,7 @@ This package supports [QuantumOptics.jl](https://github.com/qojulia/QuantumOptic
 ## Installation
 ```julia
 using Pkg
-Pkg.pkg"add https://github.com/goropikari/DiracNotation.jl"
+Pkg.add("DiracNotation")
 ```
 
 ## Usage
