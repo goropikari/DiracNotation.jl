@@ -1,4 +1,4 @@
-using QuantumOptics
+using .QuantumOptics
 
 function dirac(io::IO, state::Union{Ket, Bra}, statename="ψ"; header::Bool=false)
     header && summary(io, state)
