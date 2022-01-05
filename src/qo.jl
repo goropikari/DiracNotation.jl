@@ -25,7 +25,7 @@ end
 dirac(state::Union{Ket, Bra}, statename="ψ"; header::Bool=false) = dirac(stdout, state, statename, header=header)
 
 
-function dirac(io::IO, state::Union{DenseOperator, SparseOperator}, statename="ρ"; header::Bool=false)
+function dirac(io::IO, state::QuantumOptics.Operator, statename="ρ"; header::Bool=false)
     if header
         summary(io, state)
         println(io)
@@ -44,4 +44,4 @@ function dirac(io::IO, state::Union{DenseOperator, SparseOperator}, statename="�
         print_dirac(io, data, lshape, rshape, statename)
     end
 end
-dirac(state::Union{DenseOperator, SparseOperator}, statename="ρ"; header::Bool=false) = dirac(stdout, state, statename, header=header)
+dirac(state::QuantumOptics.Operator, statename="ρ"; header::Bool=false) = dirac(stdout, state, statename, header=header)
