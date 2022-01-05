@@ -16,7 +16,10 @@ using QuantumOptics
     @test sprint((io, x) -> dirac(io, x, header=false), psi0 ⊗ psi1) == "|ψ⟩ = |10⟩\n"
     @test sprint((io, x) -> dirac(io, x, header=false), psi1 ⊗ psi0) == "|ψ⟩ = |01⟩\n"
 
-    @show psi = randstate(b)
+    rng = MersenneTwister(0)
+    psi = Ket(b, rand(rng, Complex{Float64}, length(b)))
+    normalize!(psi)
+    @show psi
     @show psi ⊗ dagger(psi)
     @test sprint((io, x) -> dirac(io, x, header=true), psi) == "Ket(dim=2)\n  basis: Spin(1/2)\n|ψ⟩ = (0.65825+0.727547im)|0⟩+(0.131519+0.141719im)|1⟩\n"
     @test sprint((io, x) -> dirac(io, x, header=true), psi ⊗ dagger(psi)) == "DenseOperator(dim=2x2)\n  basis: Spin(1/2)\nρ = 0.962618|0⟩⟨0|+(0.18968+0.00239967im)|0⟩⟨1|+(0.18968-0.00239967im)|1⟩⟨0|+0.0373817|1⟩⟨1|\n"
