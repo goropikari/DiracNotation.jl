@@ -9,7 +9,7 @@
     @test sprint(io -> dirac(IOContext(io, :compact=>true), ket)) == "|ψ⟩ = 0.823648|00⟩+0.910357|01⟩+0.164566|10⟩+0.177329|11⟩\n"
     @test sprint(io -> dirac(IOContext(io, :compact=>false), ket)) == "|ψ⟩ = 0.8236475079774124|00⟩+0.9103565379264364|01⟩+0.16456579813368521|10⟩+0.17732884646626457|11⟩\n"
     @test sprint(io -> dirac(IOContext(io, :compact=>true), ket, [2,2])) == "|ψ⟩ = 0.823648|00⟩+0.910357|01⟩+0.164566|10⟩+0.177329|11⟩\n"
-    @test sprint(io -> dirac(IOContext(io, :compact=>true), ket, [2,2], header=true)) == "4-element Array{Float64,1}\n|ψ⟩ = 0.823648|00⟩+0.910357|01⟩+0.164566|10⟩+0.177329|11⟩\n"
+    @test sprint(io -> dirac(IOContext(io, :compact=>true), ket, [2,2], header=true)) == "4-element Vector{Float64}\n|ψ⟩ = 0.823648|00⟩+0.910357|01⟩+0.164566|10⟩+0.177329|11⟩\n"
     @test sprint(io -> dirac(IOContext(io, :compact=>true), ket, [2,2], "ϕ")) == "|ϕ⟩ = 0.823648|00⟩+0.910357|01⟩+0.164566|10⟩+0.177329|11⟩\n"
 
 
