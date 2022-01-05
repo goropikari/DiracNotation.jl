@@ -2,7 +2,6 @@ using QuantumOptics
 
 @testset "QuantumOptics" begin
 
-    Random.seed!(0)
     b = SpinBasis(1//2)
     psi0 = spinup(b)
     psi1 = spindown(b)
