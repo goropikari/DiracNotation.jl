@@ -1,8 +1,8 @@
 @testset "Float" begin
-    Random.seed!(0)
-    ket = rand(4)
+    rng = MersenneTwister(0)
+    ket = rand(rng,4)
     bra = ket'
-    ρ = rand(4,4)
+    ρ = rand(rng,4,4)
 
     DiracNotation.reset_properties()
     @test sprint(dirac, ket) == "|ψ⟩ = 0.823648|00⟩+0.910357|01⟩+0.164566|10⟩+0.177329|11⟩\n"
@@ -127,11 +127,12 @@ DiracNotation.reset_properties()
     @test sprint(dirac, [0 0; 1 0]) == "ρ = |1⟩⟨0|\n"
     @test sprint(dirac, [0 0; 0 1]) == "ρ = |1⟩⟨1|\n"
     @test sprint(dirac, ones(Int, 2,2)) == "ρ = |0⟩⟨0|+|0⟩⟨1|+|1⟩⟨0|+|1⟩⟨1|\n"
-    Random.seed!(0)
-    @show rho = rand(-4:4, 2, 2)
-    @test sprint(dirac, rho) == "ρ = -4|0⟩⟨0|+|0⟩⟨1|-2|1⟩⟨0|-4|1⟩⟨1|\n"
+    rng = MersenneTwister(0)
+    @show rho = rand(rng, -4:4, 2, 2)
+    @test rho == [0 -1; 3 2]
+    @test sprint(dirac, rho) == "ρ = -|0⟩⟨1|+3|1⟩⟨0|+2|1⟩⟨1|\n"
     rho[4] = 0
-    @test sprint(dirac, rho) == "ρ = -4|0⟩⟨0|+|0⟩⟨1|-2|1⟩⟨0|\n"
+    @test sprint(dirac, rho) == "ρ = -|0⟩⟨1|+3|1⟩⟨0|\n"
 
 
     # sprint(dirac, [1,0])
@@ -200,13 +201,13 @@ end # testset "Int"
     @test sprint(dirac, Complex{Float64}[-1+1im,-1-1im]) == "|ψ⟩ = (-1.0+im)|0⟩+(-1.0-im)|1⟩\n"
     @test sprint(dirac, Complex{Float64}[-1-1im,-1+1im]) == "|ψ⟩ = (-1.0-im)|0⟩+(-1.0+im)|1⟩\n"
     @test sprint(dirac, Complex{Float64}[-1-1im,-1-1im]) == "|ψ⟩ = (-1.0-im)|0⟩+(-1.0-im)|1⟩\n"
-    Random.seed!(0)
-    @show x = rand(-4:4, 2,2) + im*rand(-4:4, 2,2)
-    @test sprint(dirac, x) == "ρ = (-4-4im)|0⟩⟨0|+(1+4im)|0⟩⟨1|+(-2-im)|1⟩⟨0|+(-4+3im)|1⟩⟨1|\n"
+    rng = MersenneTwister(0)
+    @show x = rand(rng, -4:4, 2,2) + im*rand(rng, -4:4, 2,2)
+    @test sprint(dirac, x) == "ρ = 3im|0⟩⟨0|+(-1+2im)|0⟩⟨1|+(3-4im)|1⟩⟨0|+(2-4im)|1⟩⟨1|\n"
     x[4] = 0
-    @test sprint(dirac, x) == "ρ = (-4-4im)|0⟩⟨0|+(1+4im)|0⟩⟨1|+(-2-im)|1⟩⟨0|\n"
-    x = randn(Complex{Float64}, 2,2)
-    @test sprint(dirac, x) == "ρ = (-0.539384+0.281063im)|0⟩⟨0|+(-0.132634-1.1365im)|0⟩⟨1|+(0.573909-0.24491im)|1⟩⟨0|+(-1.75419+1.60954im)|1⟩⟨1|\n"
+    @test sprint(dirac, x) == "ρ = 3im|0⟩⟨0|+(-1+2im)|0⟩⟨1|+(3-4im)|1⟩⟨0|\n"
+    x = randn(rng, Complex{Float64}, 2,2)
+    @test sprint(dirac, x) == "ρ = (-0.761199+0.871589im)|0⟩⟨0|+(-0.00394781-0.715257im)|0⟩⟨1|+(0.19979+0.275497im)|1⟩⟨0|+(-0.0904789+0.857207im)|1⟩⟨1|\n"
 
     # sprint(dirac, Complex{Int}[1,0])
     # sprint(dirac, Complex{Int}[0, 1])
