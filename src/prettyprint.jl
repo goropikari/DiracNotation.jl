@@ -1,6 +1,6 @@
 import LinearAlgebra: Adjoint, Transpose
 import SparseArrays: SparseMatrixCSC
-import Base.Grisu: _show
+import Grisu: _show
 export dirac
 
 const SHORTEST = 1
