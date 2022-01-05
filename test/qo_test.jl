@@ -22,8 +22,8 @@ using QuantumOptics
     @show psi
     @show psi ⊗ dagger(psi)
     @test sprint((io, x) -> dirac(io, x, header=true), psi) == "Ket(dim=2)\n  basis: Spin(1/2)\n|ψ⟩ = (0.65825+0.727547im)|0⟩+(0.131519+0.141719im)|1⟩\n"
-    @test sprint((io, x) -> dirac(io, x, header=true), psi ⊗ dagger(psi)) == "DenseOperator(dim=2x2)\n  basis: Spin(1/2)\nρ = 0.962618|0⟩⟨0|+(0.18968+0.00239967im)|0⟩⟨1|+(0.18968-0.00239967im)|1⟩⟨0|+0.0373817|1⟩⟨1|\n"
-    @test sprint((io, x) -> dirac(io, x, header=true), sparse( psi ⊗ dagger(psi)) ) == "SparseOperator(dim=2x2)\n  basis: Spin(1/2)\nρ = 0.962618|0⟩⟨0|+(0.18968+0.00239967im)|0⟩⟨1|+(0.18968-0.00239967im)|1⟩⟨0|+0.0373817|1⟩⟨1|\n"
+    @test sprint((io, x) -> dirac(io, x, header=true), psi ⊗ dagger(psi)) == "Operator(dim=2x2)\n  basis: Spin(1/2)\nρ = 0.962618|0⟩⟨0|+(0.18968+0.00239967im)|0⟩⟨1|+(0.18968-0.00239967im)|1⟩⟨0|+0.0373817|1⟩⟨1|\n"
+    @test sprint((io, x) -> dirac(io, x, header=true), sparse( psi ⊗ dagger(psi)) ) == "Operator(dim=2x2)\n  basis: Spin(1/2)\nρ = 0.962618|0⟩⟨0|+(0.18968+0.00239967im)|0⟩⟨1|+(0.18968-0.00239967im)|1⟩⟨0|+0.0373817|1⟩⟨1|\n"
     @test sprint((io, x) -> dirac(io, x, header=false), psi) == "|ψ⟩ = (0.65825+0.727547im)|0⟩+(0.131519+0.141719im)|1⟩\n"
     @test sprint((io, x) -> dirac(io, x, header=false), psi ⊗ dagger(psi)) == "ρ = 0.962618|0⟩⟨0|+(0.18968+0.00239967im)|0⟩⟨1|+(0.18968-0.00239967im)|1⟩⟨0|+0.0373817|1⟩⟨1|\n"
     @test sprint((io, x) -> dirac(io, x, header=false), sparse( psi ⊗ dagger(psi)) ) == "ρ = 0.962618|0⟩⟨0|+(0.18968+0.00239967im)|0⟩⟨1|+(0.18968-0.00239967im)|1⟩⟨0|+0.0373817|1⟩⟨1|\n"
