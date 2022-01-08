@@ -1,7 +1,7 @@
 name = "DiracNotation"
 uuid = "e655511c-e992-5001-b8e2-2048e6aa15e9"
 authors = ["goropikari <goropikari56@gmail.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 Grisu = "42e2da0e-8278-4e71-bc24-59509adca0fe"
