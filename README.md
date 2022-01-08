@@ -1,3 +1,5 @@
+[![CI](https://github.com/goropikari/DiracNotation.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/goropikari/DiracNotation.jl/actions/workflows/CI.yml)
+
 # DiracNotation
 
 By using this package, matrix representation is changed into Dirac notation.
