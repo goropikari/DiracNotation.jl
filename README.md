@@ -1,12 +1,6 @@
 # DiracNotation
 
-[![Build Status](https://travis-ci.org/goropikari/DiracNotation.jl.svg?branch=master)](https://travis-ci.org/goropikari/DiracNotation.jl)
-[![Build status](https://ci.appveyor.com/api/projects/status/fjmycb3eua297348?svg=true)](https://ci.appveyor.com/project/goropikari/diracnotation-jl)
-[![Coverage Status](https://coveralls.io/repos/goropikari/DiracNotation.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/goropikari/DiracNotation.jl?branch=master)
-[![codecov.io](http://codecov.io/github/goropikari/DiracNotation.jl/coverage.svg?branch=master)](http://codecov.io/github/goropikari/DiracNotation.jl?branch=master)
-
 By using this package, matrix representation is changed into Dirac notation.
-This package supports [QuantumOptics.jl](https://github.com/qojulia/QuantumOptics.jl)
 
 ![mathjax](examples/mathjax.png)
 
